@@ -1,0 +1,162 @@
+name: Release
+
+env:
+  PROJECT_NAME: "25-01"
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            name: windows-x64
+          - os: ubuntu-latest
+            name: linux-amd64
+          - os: macos-latest
+            name: macos-arm64
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13' # 根据需求可调整版本，推荐使用 3.11 配合 Nuitka
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nuitka
+        pip install -r requirements.txt
+
+    - name: Get version
+      id: version
+      run: |
+        VERSION="${GITHUB_REF##*/}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+
+    - name: Update bot.py version
+      run: |
+        # 使用 Python 跨平台替换版本字符串
+        python -c "
+        import sys
+        content = open('bot.py', encoding='utf-8').read()
+        # content = content.replace('ver, env = \"v-dev\", \"dev\"', f'ver, env = \"{sys.argv[1]}\", \"prod\"')
+        content = content.replace('ver = \"v-dev\"', f'ver = \"{sys.argv[1]}\"')
+        open('bot.py', 'w', encoding='utf-8').write(content)
+        " "${{ steps.version.outputs.version }}"
+
+    - name: Build with Nuitka
+      env:
+        OS_NAME: ${{ matrix.os }}
+      run: |
+        BINARY_NAME="$PROJECT_NAME"
+        ICON_FLAG=""
+        
+        # 根据系统设置不同平台的图标和后缀
+        if [[ "$OS_NAME" == *"windows"* ]]; then
+          BINARY_NAME="${BINARY_NAME}.exe"
+          ICON_FLAG="--windows-icon-from-ico=icon/icon.ico"
+        elif [[ "$OS_NAME" == *"macos"* ]]; then
+          ICON_FLAG="--macos-app-icon=icon/icon.icns"
+        fi
+        
+        # 核心 Nuitka 编译命令
+        python -m nuitka --onefile \
+                 --assume-yes-for-downloads \
+                 --include-module=nonebot.drivers.fastapi \
+                 --output-dir=build \
+                 --output-filename="$BINARY_NAME" \
+                 $ICON_FLAG \
+                 bot.py
+
+    - name: Package artifacts
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        OS_NAME="${{ matrix.os }}"
+        ARCHIVE_NAME="${PROJECT_NAME}_${VERSION}_${{ matrix.name }}"
+        BINARY_NAME="$PROJECT_NAME"
+        
+        if [[ "$OS_NAME" == *"windows"* ]]; then
+          BINARY_NAME="${BINARY_NAME}.exe"
+        fi
+        
+        # 创建打包暂存目录
+        mkdir -p dist/pkg
+        cp "build/$BINARY_NAME" dist/pkg/
+        cp configs.example.json dist/pkg/
+        cp location.example.json dist/pkg/
+        cp image_metadata.example.json dist/pkg/
+        cp -r prompt dist/pkg/
+        
+        cd dist/pkg
+        if [[ "$OS_NAME" == *"windows"* ]]; then
+          # 使用 Windows 环境自带的 7z 替代 zip
+          7z a "../${ARCHIVE_NAME}.zip" .
+        else
+          tar -czf "../${ARCHIVE_NAME}.tar.gz" .
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.name }}
+        path: |
+          dist/*.zip
+          dist/*.tar.gz
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ github.ref_name }}
+      cancel-in-progress: false
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/v')
+
+    steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: Create or update Release (idempotent)
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG="${GITHUB_REF_NAME}"
+        TITLE="Release ${TAG}"
+        REPO="${GITHUB_REPOSITORY}"
+        if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+          gh release edit "$TAG" --repo "$REPO" --title "$TITLE" --latest
+        else
+          gh release create "$TAG" --repo "$REPO" --title "$TITLE" --generate-notes --latest
+        fi
+
+    - name: Upload Release Assets (overwrite)
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        TAG="${GITHUB_REF_NAME}"
+        REPO="${GITHUB_REPOSITORY}"
+        gh release upload "$TAG" artifacts/**/* --repo "$REPO" --clobber

@@ -1,0 +1,61 @@
+name: Build Docker Image
+
+env:
+  PROJECT_NAME: "25-01"
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION="${GITHUB_REF##*/}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Version: $VERSION"
+
+      - name: Update bot.py version
+        run: |
+          # 在构建 Docker 镜像前替换入口文件中的版本及环境标识
+          python -c "
+          import sys
+          content = open('bot.py', encoding='utf-8').read()
+          # content = content.replace('ver, env = \"v-dev\", \"dev\"', f'ver, env = \"{sys.argv[1]}\", \"prod\"')
+          content = content.replace('ver = \"v-dev\"', f'ver = \"{sys.argv[1]}\"')
+          open('bot.py', 'w', encoding='utf-8').write(content)
+          " "${{ steps.version.outputs.version }}"
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          IMAGE_NAME="ghcr.io/$(echo "${{ github.repository_owner }}/$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
+          VERSION=${{ steps.version.outputs.version }}
+          docker build \
+            --build-arg VERSION="$VERSION" \
+            --build-arg GIT_SHA="${GITHUB_SHA}" \
+            --build-arg BUILD_DATE="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+            -t $IMAGE_NAME:$VERSION -t $IMAGE_NAME:latest .
+
+      - name: Push Docker image
+        run: |
+          IMAGE_NAME="ghcr.io/$(echo "${{ github.repository_owner }}/$PROJECT_NAME" | tr '[:upper:]' '[:lower:]')"
+          VERSION=${{ steps.version.outputs.version }}
+          docker push $IMAGE_NAME:$VERSION
+          docker push $IMAGE_NAME:latest

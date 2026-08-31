@@ -1,0 +1,104 @@
+[
+  {
+    "image_id": 1,
+    "file_name": "1.gif",
+    "type": "动画表情",
+    "summary": "[爱心]"
+  },
+  {
+    "image_id": 2,
+    "file_name": "2.gif",
+    "type": "动画表情",
+    "summary": "[打字(恼怒)]"
+  },
+  {
+    "image_id": 3,
+    "file_name": "3.gif",
+    "type": "动画表情",
+    "summary": "[打字(普通)]"
+  },
+  {
+    "image_id": 4,
+    "file_name": "4.gif",
+    "type": "动画表情",
+    "summary": "[打字(生气)]"
+  },
+  {
+    "image_id": 5,
+    "file_name": "5.gif",
+    "type": "动画表情",
+    "summary": "[得分(0分)]"
+  },
+  {
+    "image_id": 6,
+    "file_name": "6.gif",
+    "type": "动画表情",
+    "summary": "[得分(10分)]"
+  },
+  {
+    "image_id": 7,
+    "file_name": "7.gif",
+    "type": "动画表情",
+    "summary": "[点赞]"
+  },
+  {
+    "image_id": 8,
+    "file_name": "8.gif",
+    "type": "动画表情",
+    "summary": "[反向点赞]"
+  },
+  {
+    "image_id": 9,
+    "file_name": "9.gif",
+    "type": "动画表情",
+    "summary": "[害羞]"
+  },
+  {
+    "image_id": 10,
+    "file_name": "10.gif",
+    "type": "动画表情",
+    "summary": "[汗]"
+  },
+  {
+    "image_id": 11,
+    "file_name": "11.gif",
+    "type": "动画表情",
+    "summary": "[摸头]"
+  },
+  {
+    "image_id": 12,
+    "file_name": "12.gif",
+    "type": "动画表情",
+    "summary": "[生气]"
+  },
+  {
+    "image_id": 13,
+    "file_name": "13.gif",
+    "type": "动画表情",
+    "summary": "[睡觉]"
+  },
+  {
+    "image_id": 14,
+    "file_name": "14.gif",
+    "type": "动画表情",
+    "summary": "[问号]"
+  },
+  {
+    "image_id": 15,
+    "file_name": "15.gif",
+    "type": "动画表情",
+    "summary": "[笑]"
+  },
+  {
+    "image_id": 16,
+    "file_name": "16.gif",
+    "type": "动画表情",
+    "summary": "[自我安慰]"
+  },
+  {
+    "image_id": 17,
+    "file_name": "17.gif",
+    "type": "动画表情",
+    "summary": "[坐牢]"
+  }
+]

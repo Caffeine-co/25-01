@@ -1,0 +1,232 @@
+{
+  "host": "127.0.0.1",
+  "port": 2500,
+  "llm_config": {
+    "api_key": "",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
+    "model_name": "gemini-3.7-flash",
+    "thinking": "enabled",
+    "temperature": 1,
+    "reasoning_effort": "medium",
+    "timeout": 60,
+    "retry_times": 3
+  },
+  "setting_config": {
+    "prompt": {
+      "preset": "prompt/preset.md",
+      "common": {
+        "core": "prompt/common/core.md",
+        "state": "prompt/common/state.md",
+        "chat": "prompt/common/chat.md"
+      },
+      "task": {
+        "status_update": "prompt/task/status_update.md",
+        "pre_chat": "prompt/task/pre_chat.md",
+        "group_chat": "prompt/task/group_chat.md",
+        "friend_chat": "prompt/task/friend_chat.md",
+        "memory_archive": "prompt/task/memory_archive.md"
+      }
+    },
+    "tz_offset": 9,
+    "active_model_args": {
+      "poll_interval_seconds": 600,
+      "global_rate_multiplier": 1.65,
+      "base_rate_per_hour": 0.32,
+      "wake_hour": 11.0,
+      "sleep_hour": 3.5,
+      "sleep_floor": 0.035,
+      "awake_edge_steepness": 3.2,
+      "weekday_multipliers": {
+        "0": 0.95,
+        "1": 0.95,
+        "2": 1.00,
+        "3": 1.00,
+        "4": 1.08,
+        "5": 1.15,
+        "6": 1.10
+      },
+      "activity_peaks": [
+        {
+          "name": "起床后查看通知",
+          "center_hour": 11.5,
+          "width_hour": 0.55,
+          "rate_per_hour": 0.85
+        },
+        {
+          "name": "下午浏览与自拍发布",
+          "center_hour": 14.3,
+          "width_hour": 1.15,
+          "rate_per_hour": 0.55
+        },
+        {
+          "name": "上学前与移动途中",
+          "center_hour": 17.2,
+          "width_hour": 0.65,
+          "rate_per_hour": 0.45
+        },
+        {
+          "name": "放学后集中查看",
+          "center_hour": 21.8,
+          "width_hour": 0.95,
+          "rate_per_hour": 0.85
+        },
+        {
+          "name": "Nightcord活动期间",
+          "center_hour": 0.7,
+          "width_hour": 1.25,
+          "rate_per_hour": 1.20
+        },
+        {
+          "name": "作业结束后的搜索与回查",
+          "center_hour": 2.6,
+          "width_hour": 0.55,
+          "rate_per_hour": 0.90
+        }
+      ]
+    },
+    "default_status": {
+      "current_time": "2026-08-25T20:00:00+09:00",
+
+      "current_location": "神山高校",
+      "current_activity": "在校内进行晚间课程，并利用空闲时间处理课业和绘画相关的事情",
+      "current_situation": "晚间仍在学校，课程接近后半段，周围活动逐渐减少，整体处于普通而略显疲劳的日常状态",
+
+      "environmental_comfort": 62,
+      "privacy_level": 38,
+      "noise_level": 32,
+      "crowd_density": 30,
+
+      "energy_level": 48,
+      "physical_stamina": 50,
+      "fatigue_level": 57,
+      "sleepiness_level": 38,
+      "hunger_level": 55,
+      "thirst_level": 42,
+      "appetite_level": 52,
+      "pain_level": 5,
+      "physical_strain": 25,
+
+      "sleep_quality": 50,
+      "sleep_debt": 50,
+      "circadian_stability": 50,
+      "body_temperature_c": 36.7,
+      "recovery_capacity": 50,
+      "nutrition_status": 50,
+      "hydration_level": 50,
+      "physiological_arousal": 50,
+      "sensory_overload": 50,
+
+      "joy": 42,
+      "calmness": 52,
+      "sadness": 25,
+      "anxiety": 38,
+      "anger": 18,
+      "fear": 8,
+      "hope": 45,
+      "shame": 22,
+      "loneliness": 25,
+      "belongingness": 62,
+      "emotional_stability": 48,
+      "emotional_intensity": 45,
+
+      "attention_capacity": 58,
+      "concentration": 55,
+      "mental_clarity": 54,
+      "working_memory_capacity": 56,
+      "cognitive_flexibility": 52,
+      "executive_function": 50,
+      "decision_speed": 52,
+      "judgment_confidence": 42,
+      "self_awareness": 68,
+      "rumination_level": 55,
+
+      "self_esteem": 35,
+      "self_efficacy": 44,
+      "future_confidence": 40,
+      "sense_of_meaning": 58,
+
+      "intrinsic_motivation": 68,
+      "extrinsic_motivation": 50,
+      "achievement_motivation": 72,
+      "affiliation_need": 58,
+      "approval_need": 76,
+      "autonomy_need": 67,
+      "creative_drive": 82,
+      "avoidance_tendency": 48,
+
+      "openness": 72,
+      "conscientiousness": 58,
+      "extraversion": 48,
+      "agreeableness": 55,
+      "emotional_reactivity": 74,
+      "impulsivity": 58,
+      "patience": 43,
+      "resilience": 55,
+      "adaptability": 52,
+      "perfectionism": 84,
+      "risk_tolerance": 42,
+
+      "accumulated_stress": 58,
+      "emotional_exhaustion": 42,
+      "burnout_risk": 38,
+      "trigger_sensitivity": 68,
+      "coping_capacity": 52,
+      "attachment_security": 50,
+
+      "family_closeness": 42,
+      "friendship_closeness": 78,
+      "interpersonal_trust": 60,
+      "social_connectedness": 70,
+      "interpersonal_dependency": 48,
+      "interpersonal_tension": 28,
+      "social_energy": 52,
+      "emotional_support": 72,
+
+      "available_time": 32,
+      "schedule_pressure": 58,
+      "obligation_load": 52
+    }
+  },
+  "chat_config": {
+    "stay_interval_range": {
+      "max": 180,
+      "min": 120
+    },
+    "enable_vision": true,
+    "temp_image_dir": "temp_image",
+    "meta_image_dir": "meta_image",
+    "image_metadata_path": "image_metadata.json",
+    "location_path": "location.json",
+    "session_info_db_path": "session_info.db",
+    "message_db_path": "message.db",
+    "memory_db_path": "memory.db",
+    "status_path": "status.json",
+    "max_msg_reserve_num": 200,
+    "max_msg_provide_num": 100,
+    "max_session_rounds": 5,
+    "max_memory_user_counts": 20,
+    "run_mode": "whitelist",
+    "blacklists": [
+    ],
+    "whitelists": [
+      {"type": "group", "id": 1},
+      {"type": "friend", "id": 1}
+    ]
+  },
+  "scheduler_config": {
+    "chat_dispatch": {
+      "minute": "*/10"
+    },
+    "status_update": {
+      "minute": "25"
+    },
+    "memory_archive": {
+      "hour": "4",
+      "minute": "30"
+    },
+    "session_update": {
+      "hour": "8",
+      "minute": "30"
+    }
+  }
+}
