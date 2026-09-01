@@ -56,6 +56,17 @@ def init_log() -> None:
         filter=default_filter,
         format=custom_format,
     )
+    logger.add(
+        "logs/{time:YYYY-MM-DD}.log",
+        level=10,
+        diagnose=False,
+        format=custom_format,
+        encoding="utf-8",
+        rotation="00:00",
+        retention="30 days",
+        compression="zip",
+        enqueue=True,
+    )
 
 def get_configs() -> dict[str, Any]:
     try:
