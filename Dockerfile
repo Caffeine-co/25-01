@@ -13,8 +13,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # 拷贝项目的所有文件到工作目录
 COPY . .
 
-# 暴露 NoneBot 默认端口（根据 configs.json 配置，这里是 2500）
-EXPOSE 2500
+# 暴露 NoneBot 默认端口（根据 configs.json 配置，这里是 2501）
+EXPOSE 2501
 
 # 设置容器启动时执行的命令
 CMD ["python", "bot.py"]

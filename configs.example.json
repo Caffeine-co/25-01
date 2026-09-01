@@ -1,6 +1,6 @@
 {
   "host": "127.0.0.1",
-  "port": 2500,
+  "port": 2501,
   "llm_config": {
     "api_key": "",
     "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
