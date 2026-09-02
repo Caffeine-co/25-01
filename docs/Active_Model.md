@@ -77,8 +77,7 @@ $$
 当前代码最终计算：
 
 $$
-\lambda(t)
-=
+\lambda(t)=
 M_g
 \cdot
 M_w(d)
@@ -110,8 +109,7 @@ $$
 其中：
 
 $$
-\Delta t
-=
+\Delta t=
 \frac{\text{poll\_interval\_seconds}}{3600}
 $$
 
@@ -191,8 +189,7 @@ JSON 中键为字符串：
 为了正确处理跨午夜活动峰，代码使用：
 
 $$
-d(t,c)
-=
+d(t,c)=
 \min\left(
 |t-c|,
 24-|t-c|
@@ -236,8 +233,7 @@ def circular_hour_distance(current_hour, center_hour):
 对应：
 
 $$
-G_i(t)
-=
+G_i(t)=
 \exp\left(
 -\frac{1}{2}
 \left[
@@ -337,8 +333,7 @@ width_hour > 0
 所有活动峰直接求和：
 
 $$
-\lambda_{\text{peak}}(t)
-=
+\lambda_{\text{peak}}(t)=
 \sum_i r_iG_i(t)
 $$
 
@@ -438,16 +433,14 @@ sleep_hour = 3.5
 起床过渡：
 
 $$
-W_{\text{wake}}(t)
-=
+W_{\text{wake}}(t)=
 S(kh)
 $$
 
 入睡过渡：
 
 $$
-W_{\text{sleep}}(t)
-=
+W_{\text{sleep}}(t)=
 S\left(k(D-h)\right)
 $$
 
@@ -471,8 +464,7 @@ raw_awake_weight = (
 即：
 
 $$
-W_{\text{raw}}(t)
-=
+W_{\text{raw}}(t)=
 W_{\text{wake}}(t)
 W_{\text{sleep}}(t)
 $$
@@ -486,8 +478,7 @@ $$
 因此加入最低权重：
 
 $$
-W_a(t)
-=
+W_a(t)=
 f_s+
 (1-f_s)W_{\text{raw}}(t)
 $$
@@ -609,8 +600,7 @@ rate_per_hour = (
 
 $$
 \boxed{
-\lambda(t)
-=
+\lambda(t)=
 M_g
 M_w(d)
 W_a(t)
@@ -698,10 +688,8 @@ $$
 表示：
 
 $$
-\Delta t
-=
-\frac{600}{3600}
-=
+\Delta t=
+\frac{600}{3600}=
 \frac{1}{6}\ \text{hour}
 $$
 
@@ -714,8 +702,7 @@ $$
 那么每 10 分钟一轮时：
 
 $$
-P
-=
+P=
 1-e^{-1/6}
 \approx15.35\%
 $$
@@ -951,8 +938,7 @@ $$
 
 $$
 \boxed{
-P(t)
-=
+P(t)=
 1-
 \exp\left[-
 M_g
@@ -969,8 +955,7 @@ $$
 其中：
 
 $$
-G_i(t)
-=
+G_i(t)=
 \exp\left(
 -\frac{1}{2}
 \left[
@@ -986,8 +971,7 @@ $$
 以及：
 
 $$
-W_a(t)
-=
+W_a(t)=
 f_s+
 (1-f_s)
 S(kh)
