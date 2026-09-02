@@ -106,11 +106,10 @@ $$
 P(t)=1-e^{-\lambda(t)\Delta t}
 $$
 
-其中：
+其中，$T_p$ 为单次轮询间隔，对应配置项 `poll_interval_seconds`，单位为秒：
 
 $$
-\Delta t=
-\frac{\text{poll\_interval\_seconds}}{3600}
+\Delta t=\frac{T_p}{3600}
 $$
 
 ---
