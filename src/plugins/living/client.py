@@ -40,9 +40,9 @@ async def request_llm(message: list, validate_model: type[T]) -> T:
                 except ValidationError:
                     pass
             if attempt < llm_cfg["retry_times"]:
-                logger.error(f"llm request api failed, retrying {attempt + 1} times: \n{e}")
+                logger.exception(f"llm request api failed, retrying {attempt + 1} times: \n{e}")
             else:
-                logger.error(f"llm request api all failed: \n{e}")
+                logger.exception(f"llm request api all failed: \n{e}")
     raise RuntimeError("llm request failed")
 
 async def pre_chat_request(message: list) -> dict:

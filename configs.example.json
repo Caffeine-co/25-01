@@ -10,7 +10,7 @@
     "reasoning_effort": "medium",
     "timeout": {
       "connect": 10,
-      "read": 30,
+      "read": 120,
       "write": 30,
       "pool": 10
     },
