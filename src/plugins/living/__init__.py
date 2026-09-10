@@ -3,8 +3,6 @@ import json
 import logging
 import random
 import time
-from apscheduler.executors.asyncio import AsyncIOExecutor
-from apscheduler.executors.base import MaxInstancesReachedError
 from apscheduler.job import Job
 from apscheduler.jobstores.memory import MemoryJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -21,6 +19,7 @@ from src.plugins.living.config import chat_cfg, scheduler_cfg
 from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory
 from src.plugins.living.preprocess import get_pre_chat_input, get_chatting_input, get_status_update_input, get_memory_archive_input
 from src.plugins.living.probability import active_probability
+from src.plugins.living.scheduling import SharedLimitAsyncIOExecutor, SharedLimitSkipFilter
 from src.plugins.living.utils import check_null_msg, format_received_msg, download_image_to_temp
 from src.plugins.living.validate import CharacterStatus
 from typing import Any, ParamSpec, TypeVar
@@ -68,46 +67,11 @@ class PriorityMemoryJobStore(MemoryJobStore):
         )
         return jobs
 
-class SharedLimitAsyncIOExecutor(AsyncIOExecutor):
-    def __init__(self, max_instances: int = 1) -> None:
-        if max_instances < 1:
-            raise ValueError("max_instances 必须大于等于 1")
-        super().__init__()
-        self._shared_max_instances = max_instances
-        self._shared_instances = 0
-
-    def submit_job(self, job: Job, run_times: list[datetime]) -> None:
-        assert self._lock is not None, "Executor 尚未启动"
-        with self._lock:
-            if self._instances[job.id] >= job.max_instances:
-                raise MaxInstancesReachedError(job)
-            if self._shared_instances >= self._shared_max_instances:
-                raise MaxInstancesReachedError(job)
-            self._do_submit_job(job, run_times)
-            self._instances[job.id] += 1
-            self._shared_instances += 1
-
-    def _release_instance(self, job_id: str) -> None:
-        self._instances[job_id] -= 1
-        if self._instances[job_id] == 0:
-            del self._instances[job_id]
-        self._shared_instances -= 1
-        if self._shared_instances < 0:
-            raise RuntimeError("Executor 共享运行计数小于 0")
-
-    def _run_job_success(self, job_id: str, events: list[Any]) -> None:
-        with self._lock:
-            self._release_instance(job_id)
-        for event in events:
-            self._scheduler._dispatch_event(event)
-
-    def _run_job_error(self, job_id: str, exc: BaseException, traceback: Any = None) -> None:
-        with self._lock:
-            self._release_instance(job_id)
-        exc_info = (exc.__class__, exc, traceback)
-        self._logger.error("Error running job %s", job_id, exc_info=exc_info)
+scheduler_logger = logging.getLogger("apscheduler.living.scheduler")
+scheduler_logger.addFilter(SharedLimitSkipFilter({"shared"}))
 
 scheduler = AsyncIOScheduler(
+    logger=scheduler_logger,
     timezone="Asia/Shanghai",
     jobstores={
         "default": PriorityMemoryJobStore()
