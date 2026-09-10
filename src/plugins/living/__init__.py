@@ -156,7 +156,7 @@ async def chat_dispatch() -> None:
         logger.info(f"Browsing the homepage...")
         pre_chat_output = await pre_chat_request(pre_chat_input)
     except:
-        logger.error(f"pre_chat_request failed completely")
+        logger.error(f"pre_chat_request failed")
         return
     await status.update(pre_chat_output["new_status"])
     session = pre_chat_output["session"]
@@ -167,7 +167,7 @@ async def chat_dispatch() -> None:
             logger.info(f"Browsing the messages...")
             chatting_output = await chatting_request(chatting_input, session)
         except:
-            logger.error(f"chatting_request failed completely")
+            logger.error(f"chatting_request failed")
             return
         await status.update(chatting_output["new_status"])
         await update_msg_read_status(session, unread_msg_list)
@@ -199,8 +199,8 @@ async def status_update() -> None:
     status_input = await get_status_update_input(status)
     try:
         status_output = await status_request(status_input)
-    except Exception as e:
-        logger.error(f"status_request error: \n{e}]")
+    except:
+        logger.error(f"status_request failed")
         return
     await status.update(status_output["new_status"])
     logger.success(f"Status update complete")

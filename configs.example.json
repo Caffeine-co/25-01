@@ -4,12 +4,17 @@
   "llm_config": {
     "api_key": "",
     "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-    "model_name": "gemini-3.7-flash",
+    "model_name": "gemini-3.8-flash",
     "thinking": "enabled",
     "temperature": 1,
     "reasoning_effort": "medium",
-    "timeout": 60,
-    "retry_times": 3
+    "timeout": {
+      "connect": 10,
+      "read": 30,
+      "write": 30,
+      "pool": 10
+    },
+    "retry_times": 1
   },
   "setting_config": {
     "prompt": {
