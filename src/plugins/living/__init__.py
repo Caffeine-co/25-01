@@ -131,6 +131,7 @@ async def chat_dispatch() -> None:
             logger.info(f"Browsing the messages...")
             chatting_output = await chatting_request(chatting_input, session)
             await update_session_open_time(session, int(time.time()))
+            await update_session_at_me(session, False)
         except:
             logger.error(f"chatting_request failed")
             return
@@ -286,7 +287,7 @@ async def record(event: GroupMessageEvent | PrivateMessageEvent):
                 "content": content,
                 "image_data": img_data
             })
-            if check_at_me:
+            if check_at_me(event):
                 await update_session_at_me(
                     {"type": event.message_type, "id": event.group_id},
                     True

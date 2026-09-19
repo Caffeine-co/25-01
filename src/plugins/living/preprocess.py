@@ -160,7 +160,7 @@ async def init_content_preview() -> str:
             "activity": activity,
             "latest_msg": latest_msg
         })
-    aftersort_sessions = sorted(presort_sessions, key=lambda x: x["latest_msg"].get("time", 0), reverse=True)
+    # aftersort_sessions = sorted(presort_sessions, key=lambda x: x["latest_msg"].get("time", 0), reverse=True)
     content = ["# 消息主页"]
     for session in aftersort_sessions:
         latest_msg = session["latest_msg"]
@@ -168,10 +168,10 @@ async def init_content_preview() -> str:
         if session["type"] == "group":
             group_info = await get_group_info(session["id"])
             content.extend([
-                f"## {group_info.get("group_name", "未知")}",
+                f"## {group_info.get('group_name', '未知')}",
                 "- 类型：群聊",
                 f"- ID：{session['id']}",
-                f"- 人数：{group_info.get("member_count", "未知")}"
+                f"- 人数：{group_info.get('member_count', '未知')}"
             ])
             if activity:
                 has_at_me = activity["has_at_me"]
