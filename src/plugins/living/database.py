@@ -226,7 +226,6 @@ async def record_self_msg(session: dict, message: dict) -> None:
                 time,
                 message_id,
                 content,
-                image_data,
                 from_me,
                 read_state
             )
@@ -236,7 +235,6 @@ async def record_self_msg(session: dict, message: dict) -> None:
                 message["time"],
                 message["message_id"],
                 message["content"],
-                message["image_data"],
                 1,
                 1
             )

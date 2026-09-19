@@ -161,7 +161,7 @@ async def init_content_preview() -> str:
             latest_msg = await get_latest_group_msg(session["id"])
             if latest_msg:
                 if latest_msg["from_me"]:
-                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}]{latest_msg['content']}")
+                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}][SELF]{latest_msg['content']}")
                 else:
                     content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}][{latest_msg['nickname']}]{latest_msg['content']}")
             else:
@@ -188,7 +188,10 @@ async def init_content_preview() -> str:
             ])
             latest_msg = await get_latest_friend_msg(session["id"])
             if latest_msg:
-                content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}]{latest_msg['content']}")
+                if latest_msg["from_me"]:
+                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}][SELF]{latest_msg['content']}")
+                else:
+                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}]{latest_msg['content']}")
             else:
                 content.append("- 消息预览：无")
             msg_list = await get_friend_msg_list(session["id"])
@@ -337,18 +340,6 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                     "type": "text",
                     "text": f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[{read_msg['user_id']}]|[{read_msg['nickname']}]|{read_msg['content']}"
                 })
-            if chat_cfg["enable_vision"]:
-                temp_image_list = json.loads(read_msg["image_data"])
-                for image in temp_image_list:
-                    try:
-                        content.append({
-                            "type": "image_url",
-                            "image_url": {
-                                "url":  f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
-                            }
-                        })
-                    except:
-                        pass
         content.append({"type": "text", "text": "=== 新消息 ==="})
         if msg_list["unread_msg"]:
             for unread_msg in msg_list["unread_msg"]:
@@ -387,18 +378,6 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                     "type": "text",
                     "text": f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|{read_msg['content']}"
                 })
-            if chat_cfg["enable_vision"]:
-                temp_image_list = json.loads(read_msg["image_data"])
-                for image in temp_image_list:
-                    try:
-                        content.append({
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
-                            }
-                        })
-                    except:
-                        pass
         content.append({"type": "text", "text": "=== 新消息 ==="})
         if msg_list["unread_msg"]:
             for unread_msg in msg_list["unread_msg"]:

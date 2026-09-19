@@ -4,7 +4,6 @@ import httpx
 import json
 import os
 from datetime import datetime, timezone, timedelta
-from nonebot.adapters.onebot.v11 import GroupMessageEvent
 from nonebot.adapters.onebot.v11.utils import unescape
 from nonebot.adapters.onebot.v11.message import Message, MessageSegment
 from pathlib import Path
@@ -60,10 +59,6 @@ def check_null_msg(msg: Message) -> bool:
     seg_length = len(msg)
     return null_text_num == seg_length
 
-def read_txt_sync(path: str | Path) -> str:
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
-
 async def read_txt_async(path: str | Path) -> str:
     async with aiofiles.open(path, "r", encoding="utf-8") as f:
         return await f.read()
@@ -93,37 +88,6 @@ async def download_image_to_temp(url: str, temp_name: str) -> None:
             async for chunk in response.aiter_bytes(chunk_size=1024):
                 await f.write(chunk)
 
-async def get_meta_image_filename(meta_id: int) -> str:
-    image_metadata = await read_json_async(chat_cfg["image_metadata_path"])
-    return next(
-        i["file_name"]
-        for i in image_metadata
-        if meta_id == i["image_id"]
-    )
-
-async def meta_image_to_temp(meta_id: int, temp_name: str) -> None:
-    meta_name = await get_meta_image_filename(meta_id)
-    async with aiofiles.open(f"{chat_cfg['meta_image_dir']}/{meta_name}", "rb") as f:
-        image = await f.read()
-    Path(chat_cfg["temp_image_dir"]).mkdir(parents=True, exist_ok=True)
-    async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{temp_name}", "wb") as f:
-        await f.write(image)
-
-async def delete_temp_image(temp_name: str) -> None:
-    try:
-        os.remove(f"{chat_cfg['temp_image_dir']}/{temp_name}")
-    except:
-        pass
-
-async def temp_image_to_base64(temp_name: str, b64_mark: bool) -> str:
-    async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{temp_name}", "rb") as f:
-        data = await f.read()
-        image = base64.b64encode(data).decode("utf-8")   # utf-8/ascii
-    if b64_mark:
-        return f"base64://{image}"
-    else:
-        return image
-
 async def get_meta_image_summary(meta_id: int) -> str:
     image_metadata = await read_json_async(chat_cfg["image_metadata_path"])
     return next(
@@ -134,6 +98,39 @@ async def get_meta_image_summary(meta_id: int) -> str:
         ),
         "图片"
     )
+
+async def get_meta_image_filename(meta_id: int) -> str:
+    image_metadata = await read_json_async(chat_cfg["image_metadata_path"])
+    return next(
+        i["file_name"]
+        for i in image_metadata
+        if meta_id == i["image_id"]
+    )
+
+async def meta_image_to_base64(meta_id: int, b64_mark: bool) -> str:
+    meta_name = await get_meta_image_filename(meta_id)
+    async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{meta_name}", "rb") as f:
+        data = await f.read()
+        image = base64.b64encode(data).decode("utf-8")
+    if b64_mark:
+        return f"base64://{image}"
+    else:
+        return image
+
+async def temp_image_to_base64(temp_name: str, b64_mark: bool) -> str:
+    async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{temp_name}", "rb") as f:
+        data = await f.read()
+        image = base64.b64encode(data).decode("utf-8")
+    if b64_mark:
+        return f"base64://{image}"
+    else:
+        return image
+
+async def delete_temp_image(temp_name: str) -> None:
+    try:
+        os.remove(f"{chat_cfg['temp_image_dir']}/{temp_name}")
+    except:
+        pass
 
 async def format_received_msg(message: Message, self_id: int | str) -> tuple[str,list]:
     content = ""
