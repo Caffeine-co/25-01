@@ -162,7 +162,8 @@ async def init_content_preview() -> str:
         })
     # aftersort_sessions = sorted(presort_sessions, key=lambda x: x["latest_msg"].get("time", 0), reverse=True)
     content = ["# 消息主页"]
-    for session in aftersort_sessions:
+    # for session in aftersort_sessions:
+    for session in presort_sessions:
         latest_msg = session["latest_msg"]
         activity = session["activity"]
         if session["type"] == "group":
@@ -179,13 +180,13 @@ async def init_content_preview() -> str:
                 last_chat_time = activity["last_chat_time"]
             else:
                 has_at_me, last_open_time, last_chat_time = 0, 0, 0
+            content.append(f"- @自身未查看：{'是' if has_at_me else '否'}")
             if latest_msg:
-                at_placeholder = "[有人@自己]" if has_at_me else ""
                 latest_time = ts_to_time(latest_msg["time"])
                 if latest_msg["from_me"]:
-                    content.append(f"- 消息预览：{at_placeholder}[{latest_time}][SELF]{latest_msg['content']}")
+                    content.append(f"- 消息预览：[{latest_time}][SELF]{latest_msg['content']}")
                 else:
-                    content.append(f"- 消息预览：{at_placeholder}[{latest_time}][{latest_msg['nickname']}]{latest_msg['content']}")
+                    content.append(f"- 消息预览：[{latest_time}][{latest_msg['nickname']}]{latest_msg['content']}")
             else:
                 content.append("- 消息预览：无")
             content.extend([
