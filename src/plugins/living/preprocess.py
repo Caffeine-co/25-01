@@ -1,7 +1,7 @@
 import json
 import time
 from src.plugins.living.config import setting_cfg, chat_cfg
-from src.plugins.living.database import get_group_info, get_group_msg_list, get_latest_group_msg, get_group_impression, get_friend_info, get_latest_friend_msg, get_friend_msg_list, get_user_portrait, get_user_impression, get_user_memory, get_user_all_memory
+from src.plugins.living.database import get_group_info, get_group_msg_list, get_latest_group_msg, get_group_impression, get_friend_info, get_latest_friend_msg, get_friend_msg_list, get_user_portrait, get_user_impression, get_user_memory, get_user_all_memory, get_session_activity
 from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, temp_image_to_base64, level_text, read_json_async
 from src.plugins.living.validate import CharacterStatus
 
@@ -147,9 +147,24 @@ async def init_content_status(status: CharacterStatus) -> str:
     return "\n".join(content)
 
 async def init_content_preview() -> str:
-    content = ["# 消息主页"]
     run_mode = chat_cfg["run_mode"]
+    presort_sessions = []
     for session in chat_cfg[f"{run_mode}s"]:
+        activity = await get_session_activity(session)
+        if session["type"] == "group":
+            latest_msg = await get_latest_group_msg(session["id"])
+        else:
+            latest_msg = await get_latest_friend_msg(session["id"])
+        presort_sessions.append({
+            **session,
+            "activity": activity,
+            "latest_msg": latest_msg
+        })
+    aftersort_sessions = sorted(presort_sessions, key=lambda x: x["latest_msg"].get("time", 0), reverse=True)
+    content = ["# 消息主页"]
+    for session in aftersort_sessions:
+        latest_msg = session["latest_msg"]
+        activity = session["activity"]
         if session["type"] == "group":
             group_info = await get_group_info(session["id"])
             content.extend([
@@ -158,14 +173,25 @@ async def init_content_preview() -> str:
                 f"- ID：{session['id']}",
                 f"- 人数：{group_info.get("member_count", "未知")}"
             ])
-            latest_msg = await get_latest_group_msg(session["id"])
+            if activity:
+                has_at_me = activity["has_at_me"]
+                last_open_time = activity["last_open_time"]
+                last_chat_time = activity["last_chat_time"]
+            else:
+                has_at_me, last_open_time, last_chat_time = 0, 0, 0
             if latest_msg:
+                at_placeholder = "[有人@自己]" if has_at_me else ""
+                latest_time = ts_to_time(latest_msg["time"])
                 if latest_msg["from_me"]:
-                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}][SELF]{latest_msg['content']}")
+                    content.append(f"- 消息预览：{at_placeholder}[{latest_time}][SELF]{latest_msg['content']}")
                 else:
-                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}][{latest_msg['nickname']}]{latest_msg['content']}")
+                    content.append(f"- 消息预览：{at_placeholder}[{latest_time}][{latest_msg['nickname']}]{latest_msg['content']}")
             else:
                 content.append("- 消息预览：无")
+            content.extend([
+                f"- 最近查看：{ts_to_time(last_open_time) if last_open_time else '无'}",
+                f"- 最近自身发言：{ts_to_time(last_chat_time) if last_chat_time else '无'}"]
+            )
             msg_list = await get_group_msg_list(session["id"])
             content.append(f"- 未读消息：{len(msg_list['unread_msg'])}")
             group_impression = await get_group_impression(session["id"])
@@ -186,14 +212,23 @@ async def init_content_preview() -> str:
                 "- 类型：好友",
                 f"- ID：{session['id']}"
             ])
-            latest_msg = await get_latest_friend_msg(session["id"])
+            if activity:
+                last_open_time = activity["last_open_time"]
+                last_chat_time = activity["last_chat_time"]
+            else:
+                last_open_time, last_chat_time = 0, 0
             if latest_msg:
+                latest_time = ts_to_time(latest_msg["time"])
                 if latest_msg["from_me"]:
-                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}][SELF]{latest_msg['content']}")
+                    content.append(f"- 消息预览：[{latest_time}][SELF]{latest_msg['content']}")
                 else:
-                    content.append(f"- 消息预览：[{ts_to_time(latest_msg['time'])}]{latest_msg['content']}")
+                    content.append(f"- 消息预览：[{latest_time}]{latest_msg['content']}")
             else:
                 content.append("- 消息预览：无")
+            content.extend([
+                f"- 最近查看：{ts_to_time(last_open_time) if last_open_time else '无'}",
+                f"- 最近自身发言：{ts_to_time(last_chat_time) if last_chat_time else '无'}"]
+            )
             msg_list = await get_friend_msg_list(session["id"])
             content.append(f"- 未读消息：{len(msg_list['unread_msg'])}")
             user_portrait = await get_user_portrait(session["id"])

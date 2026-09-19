@@ -4,8 +4,9 @@ import httpx
 import json
 import os
 from datetime import datetime, timezone, timedelta
-from nonebot.adapters.onebot.v11.utils import unescape
+from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.message import Message, MessageSegment
+from nonebot.adapters.onebot.v11.utils import unescape
 from pathlib import Path
 from src.plugins.living.config import setting_cfg, chat_cfg
 from typing import Any
@@ -58,6 +59,12 @@ def check_null_msg(msg: Message) -> bool:
     null_text_num = sum(1 for seg in msg if seg.type == "text" and seg.data["text"] == "")
     seg_length = len(msg)
     return null_text_num == seg_length
+
+def check_at_me(event: GroupMessageEvent) -> bool:
+    return any(
+        seg.type == "at" and seg.data.get("qq") == str(event.self_id)
+        for seg in event.original_message
+    )
 
 async def read_txt_async(path: str | Path) -> str:
     async with aiofiles.open(path, "r", encoding="utf-8") as f:

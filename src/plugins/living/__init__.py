@@ -16,11 +16,11 @@ from nonebot.plugin.on import on_message
 from src.plugins.living.afterprocess import handle_and_send_msg, update_friend_impression_in_chat
 from src.plugins.living.client import pre_chat_request, chatting_request, status_request, memory_request
 from src.plugins.living.config import chat_cfg, scheduler_cfg
-from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory
+from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory, update_session_open_time, update_session_at_me
 from src.plugins.living.preprocess import get_pre_chat_input, get_chatting_input, get_status_update_input, get_memory_archive_input
 from src.plugins.living.probability import active_probability
 from src.plugins.living.scheduling import SharedLimitAsyncIOExecutor, SharedLimitSkipFilter
-from src.plugins.living.utils import check_null_msg, format_received_msg, download_image_to_temp
+from src.plugins.living.utils import check_null_msg, format_received_msg, download_image_to_temp, check_at_me
 from src.plugins.living.validate import CharacterStatus
 from typing import Any, ParamSpec, TypeVar
 from uuid import uuid5, NAMESPACE_OID
@@ -130,6 +130,7 @@ async def chat_dispatch() -> None:
         try:
             logger.info(f"Browsing the messages...")
             chatting_output = await chatting_request(chatting_input, session)
+            await update_session_open_time(session, int(time.time()))
         except:
             logger.error(f"chatting_request failed")
             return
@@ -285,6 +286,11 @@ async def record(event: GroupMessageEvent | PrivateMessageEvent):
                 "content": content,
                 "image_data": img_data
             })
+            if check_at_me:
+                await update_session_at_me(
+                    {"type": event.message_type, "id": event.group_id},
+                    True
+                )
         case "private":
             await record_received_friend_msg(event.user_id, {
                 "time": event.time,

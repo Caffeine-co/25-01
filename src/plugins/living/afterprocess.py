@@ -3,7 +3,7 @@ import time
 from nonebot import get_bot
 from nonebot.adapters.onebot.v11.message import MessageSegment, Message
 from nonebot.log import logger
-from src.plugins.living.database import record_self_msg, update_user_impression
+from src.plugins.living.database import record_self_msg, update_user_impression, update_session_chat_time
 from src.plugins.living.utils import meta_image_to_base64, get_meta_image_summary, add_space_after_at
 
 
@@ -44,6 +44,7 @@ async def handle_and_send_msg(session: dict, message: list) -> None:
                 send_data = await bot.send_group_msg(group_id=session["id"], message=msg)
             else:
                 send_data = await bot.send_private_msg(user_id=session["id"], message=msg)
+            await update_session_chat_time(session, int(time.time()))
         except Exception as e:
             logger.error(e)
         else:
