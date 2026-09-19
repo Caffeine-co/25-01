@@ -2,7 +2,7 @@ import json
 import time
 from src.plugins.living.config import setting_cfg, chat_cfg
 from src.plugins.living.database import get_group_info, get_group_msg_list, get_latest_group_msg, get_group_impression, get_friend_info, get_latest_friend_msg, get_friend_msg_list, get_user_portrait, get_user_impression, get_user_memory, get_user_all_memory, get_session_activity
-from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, temp_image_to_base64, level_text, read_json_async
+from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, temp_image_to_base64, level_text, read_json_async, format_content_item
 from src.plugins.living.validate import CharacterStatus
 
 
@@ -356,86 +356,82 @@ async def init_content_session(session: dict) -> tuple[list, list]:
         else:
             session_content.append("- 印象：无")
     content = [
-        {"type": "text", "text": "\n".join(session_content)},
-        {"type": "text", "text": "## 消息列表"}
+        format_content_item("text", "\n".join(session_content)),
+        format_content_item("text", "## 消息列表")
     ]
     unread_msg_id_list = []
     if session["type"] == "group":
-        content.append({
-            "type": "text",
-            "text": "- 示例：[时间]|[消息ID]|[用户ID]|[用户昵称]|内容"
-        })
+        content.append(format_content_item(
+            "text",
+            "- 示例：[时间]|[消息ID]|[用户ID]|[用户昵称]|内容"
+        ))
         for read_msg in msg_list["read_msg"]:
             if read_msg["from_me"]:
-                content.append({
-                    "type": "text",
-                    "text": f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[SELF]|{read_msg['content']}"
-                })
+                content.append(format_content_item(
+                    "text",
+                    f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[SELF]|{read_msg['content']}"
+                ))
             else:
-                content.append({
-                    "type": "text",
-                    "text": f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[{read_msg['user_id']}]|[{read_msg['nickname']}]|{read_msg['content']}"
-                })
-        content.append({"type": "text", "text": "=== 新消息 ==="})
+                content.append(format_content_item(
+                    "text",
+                    f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[{read_msg['user_id']}]|[{read_msg['nickname']}]|{read_msg['content']}"
+                ))
+        content.append(format_content_item("text", "=== 新消息 ==="))
         if msg_list["unread_msg"]:
             for unread_msg in msg_list["unread_msg"]:
                 unread_msg_id_list.append(unread_msg["message_id"])
-                content.append({
-                    "type": "text",
-                    "text": f"- [{ts_to_time(unread_msg['time'])}]|[{unread_msg['message_id']}]|[{unread_msg['user_id']}]|[{unread_msg['nickname']}]|{unread_msg['content']}"
-                })
+                content.append(format_content_item(
+                    "text",
+                    f"- [{ts_to_time(unread_msg['time'])}]|[{unread_msg['message_id']}]|[{unread_msg['user_id']}]|[{unread_msg['nickname']}]|{unread_msg['content']}"
+                ))
                 if chat_cfg["enable_vision"]:
                     temp_image_list = json.loads(unread_msg["image_data"])
                     for image in temp_image_list:
                         try:
-                            content.append({
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
-                                }
-                            })
+                            content.append(format_content_item(
+                                "image",
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                            ))
                         except:
                             pass
         else:
-            content.append({"type": "text", "text": "- 无"})
+            content.append(format_content_item("text", "- 无"))
     else:
-        content.append({
-            "type": "text",
-            "text": "- 示例：[时间]|[消息ID]|内容"
-        })
+        content.append(format_content_item(
+            "text",
+            "- 示例：[时间]|[消息ID]|内容"
+        ))
         for read_msg in msg_list["read_msg"]:
             if read_msg["from_me"]:
-                content.append({
-                    "type": "text",
-                    "text": f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[SELF]|{read_msg['content']}"
-                })
+                content.append(format_content_item(
+                    "text",
+                    f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[SELF]|{read_msg['content']}"
+                ))
             else:
-                content.append({
-                    "type": "text",
-                    "text": f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|{read_msg['content']}"
-                })
-        content.append({"type": "text", "text": "=== 新消息 ==="})
+                content.append(format_content_item(
+                    "text",
+                    f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|{read_msg['content']}"
+                ))
+        content.append(format_content_item("text", "=== 新消息 ==="))
         if msg_list["unread_msg"]:
             for unread_msg in msg_list["unread_msg"]:
                 unread_msg_id_list.append(unread_msg["message_id"])
-                content.append({
-                    "type": "text",
-                    "text": f"- [{ts_to_time(unread_msg['time'])}]|[{unread_msg['message_id']}]|{unread_msg['content']}"
-                })
+                content.append(format_content_item(
+                    "text",
+                    f"- [{ts_to_time(unread_msg['time'])}]|[{unread_msg['message_id']}]|{unread_msg['content']}"
+                ))
                 if chat_cfg["enable_vision"]:
                     temp_image_list = json.loads(unread_msg["image_data"])
                     for image in temp_image_list:
                         try:
-                            content.append({
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
-                                }
-                            })
+                            content.append(format_content_item(
+                                "image",
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                            ))
                         except:
                             pass
         else:
-            content.append({"type": "text", "text": "- 无"})
+            content.append(format_content_item("text", "- 无"))
     return content, unread_msg_id_list
 
 async def init_content_memory(user_list: list[int]) -> str:
@@ -490,17 +486,16 @@ async def get_pre_chat_input(status: CharacterStatus) -> list:
     user_content_homepage = await init_content_preview()
     user_content_location = await init_content_location()
     system_content = [
-        {"type": "text", "text": system_content_core},
-        {"type": "text", "text": system_content_preset},
-        {"type": "text", "text": system_content_state},
-        {"type": "text", "text": system_content_pre_chat}
+        format_content_item("text", system_content_core),
+        format_content_item("text", system_content_preset),
+        format_content_item("text", system_content_state),
+        format_content_item("text", system_content_pre_chat)
     ]
     user_content = [
-        {"type": "text", "text": user_content_time},
-        {"type": "text", "text": user_content_status},
-        {"type": "text", "text": user_content_homepage},
-        {"type": "text", "text": user_content_location}
-
+        format_content_item("text", user_content_time),
+        format_content_item("text", user_content_status),
+        format_content_item("text", user_content_homepage),
+        format_content_item("text", user_content_location)
     ]
     return [
         {
@@ -532,23 +527,23 @@ async def get_chatting_input(status: CharacterStatus, session: dict) -> tuple[li
     user_content_status = await init_content_status(status)
     user_content_homepage = await init_content_preview()
     system_content = [
-        {"type": "text", "text": system_content_core},
-        {"type": "text", "text": system_content_preset},
-        {"type": "text", "text": system_content_state},
-        {"type": "text", "text": system_content_chat},
-        {"type": "text", "text": system_content_task_chat}
+        format_content_item("text", system_content_core),
+        format_content_item("text", system_content_preset),
+        format_content_item("text", system_content_state),
+        format_content_item("text", system_content_chat),
+        format_content_item("text", system_content_task_chat)
     ]
     user_content = [
-        {"type": "text", "text": user_content_time},
-        {"type": "text", "text": user_content_status},
-        {"type": "text", "text": user_content_homepage}
+        format_content_item("text", user_content_time),
+        format_content_item("text", user_content_status),
+        format_content_item("text", user_content_homepage)
     ]
     user_content_msg, unread_msg_id_list = await init_content_session(session)
     user_content_location = await init_content_location()
     user_content_image = await init_content_image()
     user_content.extend(user_content_msg + [
-        {"type": "text", "text": user_content_location},
-        {"type": "text", "text": user_content_image}
+        format_content_item("text", user_content_location),
+        format_content_item("text", user_content_image)
     ])
     return [
         {
@@ -578,18 +573,18 @@ async def get_status_update_input(status: CharacterStatus) -> list:
         {
             "role": "system",
             "content": [
-                {"type": "text", "text": system_content_core},
-                {"type": "text", "text": system_content_preset},
-                {"type": "text", "text": system_content_state},
-                {"type": "text", "text": system_content_status_update}
+                format_content_item("text", system_content_core),
+                format_content_item("text", system_content_preset),
+                format_content_item("text", system_content_state),
+                format_content_item("text", system_content_status_update)
             ]
         },
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": user_content_time},
-                {"type": "text", "text": user_content_status},
-                {"type": "text", "text": user_content_location}
+                format_content_item("text", user_content_time),
+                format_content_item("text", user_content_status),
+                format_content_item("text", user_content_location)
             ]
         }
     ]
@@ -604,16 +599,16 @@ async def get_memory_archive_input(user_list: list[int]) -> list:
         {
             "role": "system",
             "content": [
-                {"type": "text", "text": system_content_core},
-                {"type": "text", "text": system_content_preset},
-                {"type": "text", "text": system_content_memory}
+                format_content_item("text", system_content_core),
+                format_content_item("text", system_content_preset),
+                format_content_item("text", system_content_memory)
             ]
         },
         {
             "role": "user",
             "content": [
-                {"type": "text", "text": user_content_time},
-                {"type": "text", "text": user_content_memory_list}
+                format_content_item("text", user_content_time),
+                format_content_item("text", user_content_memory_list)
             ]
         }
     ]

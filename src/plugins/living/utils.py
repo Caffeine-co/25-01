@@ -8,7 +8,7 @@ from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.message import Message, MessageSegment
 from nonebot.adapters.onebot.v11.utils import unescape
 from pathlib import Path
-from src.plugins.living.config import setting_cfg, chat_cfg
+from src.plugins.living.config import setting_cfg, chat_cfg, llm_cfg
 from typing import Any
 
 
@@ -65,6 +65,39 @@ def check_at_me(event: GroupMessageEvent) -> bool:
         seg.type == "at" and seg.data.get("qq") == str(event.self_id)
         for seg in event.original_message
     )
+
+def format_content_item(original_type: str, data: str) -> dict:
+    match llm_cfg["interface_type"]:
+        case "openai.response":
+            if original_type == "text":
+                return {
+                    "type": "input_text",
+                    "text": data
+                }
+            elif original_type == "image":
+                return {
+                    "type": "input_image",
+                    "image_url": "data:image/jpeg;base64,..."
+                }
+            else:
+                raise ValueError(f"Unsupported item type: {original_type}")
+        case "openai.chat.completions":
+            if original_type == "text":
+                return {
+                    "type": "text",
+                    "text": data
+                }
+            elif original_type == "image":
+                return {
+                    "type": "image_url",
+                    "image_url": {
+                        "url": "data:image/jpeg;base64,..."
+                    }
+                }
+            else:
+                raise ValueError(f"Unsupported item type: {original_type}")
+        case _:
+            raise ValueError(f"Unsupported interface type: {llm_cfg['interface_type']}")
 
 async def read_txt_async(path: str | Path) -> str:
     async with aiofiles.open(path, "r", encoding="utf-8") as f:

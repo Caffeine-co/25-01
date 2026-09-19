@@ -15,28 +15,51 @@ client = AsyncOpenAI(
     timeout=httpx2.Timeout(**llm_cfg["timeout"])
 )
 
+async def _openai_chat_completions(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
+    async with client.chat.completions.stream(
+        model=llm_cfg["model_name"],
+        messages=message,
+        response_format=validate_model,
+        reasoning_effort=llm_cfg["reasoning_effort"]
+    ) as stream:
+        async for event in stream:
+            if event.type == "content.delta":
+                chunks.append(event.delta)
+        completion = await stream.get_final_completion()
+    return completion.choices[0].message.parsed
+
+async def _openai_response(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
+    async with client.responses.stream(
+        model=llm_cfg["model_name"],
+        input=message,
+        text_format=validate_model,
+        reasoning={"effort": llm_cfg["reasoning_effort"]}    # type: ignore
+    ) as stream:
+        async for event in stream:
+            if event.type == "response.output_text.delta":
+                chunks.append(event.delta)
+        response = await stream.get_final_response()
+    return response.output_parsed
+
 async def request_llm(message: list, validate_model: type[T]) -> T:
+    match llm_cfg["interface_type"]:
+        case "openai.response":
+            request_func = _openai_response
+        case "openai.chat.completions":
+            request_func = _openai_chat_completions
+        case _:
+            raise ValueError(f"Unsupported interface type: {llm_cfg['interface_type']}")
     for attempt in range(llm_cfg["retry_times"] + 1):
-        raw_content = ""
+        chunks: list[str] = []
         try:
-            async with client.chat.completions.stream(
-                    model=llm_cfg["model_name"],
-                    messages=message,
-                    response_format=validate_model,
-                    reasoning_effort=llm_cfg["reasoning_effort"],
-            ) as stream:
-                async for event in stream:
-                    if event.type == "content.delta":
-                        raw_content += event.delta
-                completion = await stream.get_final_completion()
-            parsed = completion.choices[0].message.parsed
+            parsed = await request_func(message, validate_model, chunks)
             if parsed is None:
                 raise ValueError("Parsing content error")
             return parsed
         except Exception as e:
-            if raw_content:
+            if chunks:
                 try:
-                    return validate_model.model_validate_json(raw_content)
+                    return validate_model.model_validate_json("".join(chunks))
                 except ValidationError:
                     pass
             if attempt < llm_cfg["retry_times"]:
@@ -44,6 +67,7 @@ async def request_llm(message: list, validate_model: type[T]) -> T:
             else:
                 logger.exception(f"llm request api all failed: \n{e}")
     raise RuntimeError("llm request failed")
+
 
 async def pre_chat_request(message: list) -> dict:
     parsed = await request_llm(message, PreChatValidate)

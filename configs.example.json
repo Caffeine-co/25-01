@@ -3,17 +3,18 @@
   "port": 2501,
   "llm_config": {
     "api_key": "",
-    "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-    "model_name": "gemini-3.8-flash",
+    "base_url": "https://api.deepseek.com",
+    "model_name": "deepseek-flash",
     "thinking": "enabled",
-    "reasoning_effort": "medium",
+    "reasoning_effort": "high",
     "timeout": {
       "connect": 10,
       "read": 120,
       "write": 30,
       "pool": 10
     },
-    "retry_times": 1
+    "retry_times": 1,
+    "interface_type": "openai.response"
   },
   "setting_config": {
     "prompt": {
