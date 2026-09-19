@@ -6,7 +6,6 @@
     "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
     "model_name": "gemini-3.8-flash",
     "thinking": "enabled",
-    "temperature": 1,
     "reasoning_effort": "medium",
     "timeout": {
       "connect": 10,
