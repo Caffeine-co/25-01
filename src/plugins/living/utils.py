@@ -77,7 +77,7 @@ def format_content_item(original_type: str, data: str) -> dict:
             elif original_type == "image":
                 return {
                     "type": "input_image",
-                    "image_url": "data:image/jpeg;base64,..."
+                    "image_url": data
                 }
             else:
                 raise ValueError(f"Unsupported item type: {original_type}")
@@ -91,7 +91,7 @@ def format_content_item(original_type: str, data: str) -> dict:
                 return {
                     "type": "image_url",
                     "image_url": {
-                        "url": "data:image/jpeg;base64,..."
+                        "url": data
                     }
                 }
             else:

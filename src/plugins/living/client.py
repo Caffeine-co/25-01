@@ -33,7 +33,8 @@ async def _openai_response(message: list, validate_model: type[T], chunks: list[
         model=llm_cfg["model_name"],
         input=message,
         text_format=validate_model,
-        reasoning={"effort": llm_cfg["reasoning_effort"]}    # type: ignore
+        reasoning={"effort": llm_cfg["reasoning_effort"]},    # type: ignore
+        store=False
     ) as stream:
         async for event in stream:
             if event.type == "response.output_text.delta":
