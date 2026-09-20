@@ -222,6 +222,8 @@ NoneBot2 + OneBot V11
 
 ## ✦ Quick Start
 
+文档内容非最新适配，如遇困难请加入 QQ 群 728556872 获取帮助
+
 [**使用 Release 构建产物**](docs/Build_Deploy.md)
 
 [**从源码运行**](docs/Code_Deploy.md)
