@@ -51,15 +51,10 @@ class ImageSegment(SchemaModel):
     type: Literal["image"]
     data: ImageData
 
-GroupMessageSegment = Annotated[
-    AtSegment | TextSegment | ReplySegment | ImageSegment,
-    Field(discriminator="type")
-]
-
-FriendMessageSegment = Annotated[
-    TextSegment | ReplySegment | ImageSegment,
-    Field(discriminator="type")
-]
+# GroupMessageSegment = Annotated[AtSegment | TextSegment | ReplySegment | ImageSegment, Field(discriminator="type")]
+# FriendMessageSegment = Annotated[TextSegment | ReplySegment | ImageSegment, Field(discriminator="type")]
+GroupMessageSegment = AtSegment | TextSegment | ReplySegment | ImageSegment
+FriendMessageSegment = TextSegment | ReplySegment | ImageSegment
 
 class ExitAction(SchemaModel):
     type: Literal["exit"] = Field(description="固定值，只能输出'exit'；表示结束本次社交媒体活动")
@@ -71,10 +66,8 @@ class SwitchAction(SchemaModel):
     type: Literal["switch"] = Field(description="固定值，只能输出'switch'；表示切换到其他会话")
     session: Session = Field(description="切换后进入的目标会话")
 
-NextAction = Annotated[
-    ExitAction | StayAction | SwitchAction,
-    Field(discriminator="type"),
-]
+# NextAction = Annotated[ExitAction | StayAction | SwitchAction, Field(discriminator="type")]
+NextAction = ExitAction | StayAction | SwitchAction
 
 def validate_message_segments(message: list[list[BaseModel]] | None) -> None:
     if message is None:
@@ -231,7 +224,7 @@ class GroupChatValidate(SchemaModel):
     chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
     message: list[list[GroupMessageSegment]] | None = Field(
         default=None,
-        description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个"
+        description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
     )
     group_impression: list[GeneralImpressionItem] = Field(description="根据聊天记录重新总结的群聊印象列表")
     user_impression: list[GroupUserImpression] = Field(description="本次新形成的用户事件印象")
@@ -258,7 +251,7 @@ class FriendChatValidate(SchemaModel):
     chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
     message: list[list[FriendMessageSegment]] | None = Field(
         default=None,
-        description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个"
+        description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
     )
     user_impression: list[GeneralImpressionItem] = Field(description="本次新形成的用户事件印象列表")
     next_action: NextAction = Field(description="完成当前会话处理后的下一步行为")
@@ -290,10 +283,8 @@ class FriendMemory(SchemaModel):
     content: str = Field(description="来自好友私聊的值得长期保留的事件记忆")
     time: str = Field(description="事件发生时间，使用ISO8601格式")
 
-Memory = Annotated[
-    GroupMemory | FriendMemory,
-    Field(discriminator="type"),
-]
+# Memory = Annotated[GroupMemory | FriendMemory, Field(discriminator="type")]
+Memory = GroupMemory | FriendMemory
 
 class UserMemory(SchemaModel):
     user_id: int = Field(description="记忆对应用户的QQ号")
