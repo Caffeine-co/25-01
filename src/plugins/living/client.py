@@ -15,12 +15,42 @@ client = AsyncOpenAI(
     timeout=httpx2.Timeout(**llm_cfg["timeout"])
 )
 
+def _responses_schema(validate_model: type[BaseModel]) -> dict:
+    """展开本项目非递归模型的引用，避免 anyOf 分支只有 $ref。"""
+    schema = validate_model.model_json_schema()
+    definitions = schema.get("$defs", {})
+    def expand(node, seen: tuple[str, ...] = ()):
+        if isinstance(node, list):
+            return [expand(item, seen) for item in node]
+        if not isinstance(node, dict):
+            return node
+        if "$ref" in node:
+            ref = node["$ref"]
+            if not ref.startswith("#/$defs/") or ref in seen:
+                raise ValueError(f"Unsupported or recursive schema reference: {ref}")
+            name = ref.removeprefix("#/$defs/").replace("~1", "/").replace("~0", "~")
+            node = {
+                **definitions[name],
+                **{key: value for key, value in node.items() if key != "$ref"},
+            }
+            return expand(node, (*seen, ref))
+        result = {
+            key: expand(value, seen)
+            for key, value in node.items()
+            if key != "$defs"
+        }
+        # 字符串 Literal 使用单值 enum，保持取值约束。
+        if result.get("type") == "string" and "const" in result:
+            result["enum"] = [result.pop("const")]
+        return result
+    return expand(schema)
+
 async def _openai_chat_completions(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
     async with client.chat.completions.stream(
-        model=llm_cfg["model_name"],
-        messages=message,
-        response_format=validate_model,
-        reasoning_effort=llm_cfg["reasoning_effort"]
+        model = llm_cfg["model_name"],
+        messages = message,
+        response_format = validate_model,
+        reasoning_effort = llm_cfg["reasoning_effort"]
     ) as stream:
         async for event in stream:
             if event.type == "content.delta":
@@ -30,17 +60,24 @@ async def _openai_chat_completions(message: list, validate_model: type[T], chunk
 
 async def _openai_responses(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
     async with client.responses.stream(
-        model=llm_cfg["model_name"],
-        input=message,
-        text_format=validate_model,
-        reasoning={"effort": llm_cfg["reasoning_effort"]},    # type: ignore
-        store=False
+        model = llm_cfg["model_name"],
+        input = message,
+        # text_format = validate_model,
+        text = {"format": {
+            "type": "json_schema",
+            "name": validate_model.__name__,
+            "schema": _responses_schema(validate_model),
+            "strict": True,
+        }},
+        reasoning = {"effort": llm_cfg["reasoning_effort"]},    # type: ignore
+        store = False
     ) as stream:
         async for event in stream:
             if event.type == "response.output_text.delta":
                 chunks.append(event.delta)
         response = await stream.get_final_response()
-    return response.output_parsed
+    # return response.output_parsed
+    return validate_model.model_validate_json(response.output_text)
 
 async def request_llm(message: list, validate_model: type[T]) -> T:
     match llm_cfg["interface_type"]:

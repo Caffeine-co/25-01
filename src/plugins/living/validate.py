@@ -222,7 +222,8 @@ class PreChatValidate(SchemaModel):
 
 class GroupChatValidate(SchemaModel):
     new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
-    chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
+    # chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
+    chat: bool = Field(description="本次是否发送消息，false时message必须为[]，true时message必须非空")
     # message: list[list[GroupMessageSegment]] | None = Field(
     #     default=None,
     #     description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
@@ -256,7 +257,8 @@ class GroupChatValidate(SchemaModel):
 
 class FriendChatValidate(SchemaModel):
     new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
-    chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
+    # chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
+    chat: bool = Field(description="本次是否发送消息，false时message必须为[]，true时message必须非空")
     # message: list[list[FriendMessageSegment]] | None = Field(
     #     default=None,
     #     description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
