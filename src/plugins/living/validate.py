@@ -24,7 +24,7 @@ class Session(SchemaModel):
         return self
 
 class TextData(SchemaModel):
-    text: str = Field(description="文字内容")
+    text: str = Field(description="实际发送的文字内容，默认以简体中文为主要交流语言，并根据当前聊天语境、专有名词、引用、角色表达习惯等自然选择或混用其他语言")
 
 class AtData(SchemaModel):
     qq: int = Field(description="@的群成员QQ号")
