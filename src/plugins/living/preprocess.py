@@ -376,6 +376,16 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                     "text",
                     f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|[{read_msg['user_id']}]|[{read_msg['nickname']}]|{read_msg['content']}"
                 ))
+                if chat_cfg["enable_vision"]:
+                    temp_image_list = json.loads(read_msg["image_data"])
+                    for image in temp_image_list:
+                        try:
+                            content.append(format_content_item(
+                                "image",
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                            ))
+                        except:
+                            pass
         content.append(format_content_item("text", "=== 新消息 ==="))
         if msg_list["unread_msg"]:
             for unread_msg in msg_list["unread_msg"]:
@@ -412,6 +422,16 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                     "text",
                     f"- [{ts_to_time(read_msg['time'])}]|[{read_msg['message_id']}]|{read_msg['content']}"
                 ))
+                if chat_cfg["enable_vision"]:
+                    temp_image_list = json.loads(read_msg["image_data"])
+                    for image in temp_image_list:
+                        try:
+                            content.append(format_content_item(
+                                "image",
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                            ))
+                        except:
+                            pass
         content.append(format_content_item("text", "=== 新消息 ==="))
         if msg_list["unread_msg"]:
             for unread_msg in msg_list["unread_msg"]:
