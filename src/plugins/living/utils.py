@@ -1,13 +1,16 @@
 import aiofiles
+import asyncio
 import base64
 import httpx
 import json
 import os
 from datetime import datetime, timezone, timedelta
+from io import BytesIO
 from nonebot.adapters.onebot.v11.event import GroupMessageEvent
 from nonebot.adapters.onebot.v11.message import Message, MessageSegment
 from nonebot.adapters.onebot.v11.utils import unescape
 from pathlib import Path
+from PIL import Image, ImageOps
 from src.plugins.living.config import setting_cfg, chat_cfg, llm_cfg
 from typing import Any
 
@@ -151,20 +154,31 @@ async def meta_image_to_base64(meta_id: int, b64_mark: bool) -> str:
     meta_name = await get_meta_image_filename(meta_id)
     async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{meta_name}", "rb") as f:
         data = await f.read()
-        image = base64.b64encode(data).decode("utf-8")
-    if b64_mark:
-        return f"base64://{image}"
-    else:
-        return image
+    image = base64.b64encode(data).decode("utf-8")
+    return f"base64://{image}" if b64_mark else image
 
-async def temp_image_to_base64(temp_name: str, b64_mark: bool) -> str:
+def _scaling_image(data: bytes, max_side: int) -> bytes:
+    with Image.open(BytesIO(data)) as image:
+        if max(image.size) <= max_side:
+            return data
+        image.seek(0)
+        output_format = "JPEG" if image.format == "JPEG" else "PNG"
+        mode = "RGB" if output_format == "JPEG" else "RGBA"
+        with ImageOps.exif_transpose(image) as oriented:
+            with oriented.convert(mode) as resized:
+                resized.thumbnail((max_side, max_side), Image.Resampling.LANCZOS)
+                with BytesIO() as output:
+                    options = {"quality": 90} if output_format == "JPEG" else {}
+                    resized.save(output, format=output_format, **options)
+                    return output.getvalue()
+
+async def temp_image_to_base64(temp_name: str, b64_mark: bool, scaling: bool, max_side: int = 8192) -> str:
     async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{temp_name}", "rb") as f:
         data = await f.read()
-        image = base64.b64encode(data).decode("utf-8")
-    if b64_mark:
-        return f"base64://{image}"
-    else:
-        return image
+    if scaling:
+        data = await asyncio.to_thread(_scaling_image, data, max_side)
+    image = base64.b64encode(data).decode("utf-8")
+    return f"base64://{image}" if b64_mark else image
 
 async def delete_temp_image(temp_name: str) -> None:
     try:

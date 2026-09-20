@@ -360,6 +360,17 @@ async def init_content_session(session: dict) -> tuple[list, list]:
         format_content_item("text", "## 消息列表")
     ]
     unread_msg_id_list = []
+    image_count = 0
+    if chat_cfg["enable_vision"]:
+        image_count = sum(
+            len(json.loads(msg["image_data"]))
+            for msg in msg_list["read_msg"]
+            if not msg["from_me"]
+        ) + sum(
+            len(json.loads(msg["image_data"]))
+            for msg in msg_list["unread_msg"]
+        )
+    max_image_side = 4096 if image_count >= 15 else 8192
     if session["type"] == "group":
         content.append(format_content_item(
             "text",
@@ -382,7 +393,8 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                         try:
                             content.append(format_content_item(
                                 "image",
-                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                # f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False, True, max_image_side)}"
                             ))
                         except:
                             pass
@@ -400,7 +412,8 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                         try:
                             content.append(format_content_item(
                                 "image",
-                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                # f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False, True, max_image_side)}"
                             ))
                         except:
                             pass
@@ -428,7 +441,8 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                         try:
                             content.append(format_content_item(
                                 "image",
-                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                # f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False, True, max_image_side)}"
                             ))
                         except:
                             pass
@@ -446,7 +460,8 @@ async def init_content_session(session: dict) -> tuple[list, list]:
                         try:
                             content.append(format_content_item(
                                 "image",
-                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                # f"data:image/jpeg;base64,{await temp_image_to_base64(image, False)}"
+                                f"data:image/jpeg;base64,{await temp_image_to_base64(image, False, True, max_image_side)}"
                             ))
                         except:
                             pass
