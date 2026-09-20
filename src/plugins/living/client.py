@@ -28,7 +28,7 @@ async def _openai_chat_completions(message: list, validate_model: type[T], chunk
         completion = await stream.get_final_completion()
     return completion.choices[0].message.parsed
 
-async def _openai_response(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
+async def _openai_responses(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
     async with client.responses.stream(
         model=llm_cfg["model_name"],
         input=message,
@@ -44,8 +44,8 @@ async def _openai_response(message: list, validate_model: type[T], chunks: list[
 
 async def request_llm(message: list, validate_model: type[T]) -> T:
     match llm_cfg["interface_type"]:
-        case "openai.response":
-            request_func = _openai_response
+        case "openai.responses":
+            request_func = _openai_responses
         case "openai.chat.completions":
             request_func = _openai_chat_completions
         case _:

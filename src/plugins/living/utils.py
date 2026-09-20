@@ -68,7 +68,7 @@ def check_at_me(event: GroupMessageEvent) -> bool:
 
 def format_content_item(original_type: str, data: str) -> dict:
     match llm_cfg["interface_type"]:
-        case "openai.response":
+        case "openai.responses":
             if original_type == "text":
                 return {
                     "type": "input_text",

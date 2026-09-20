@@ -13,7 +13,7 @@
       "pool": 10
     },
     "retry_times": 1,
-    "interface_type": "openai.response"
+    "interface_type": "openai.responses"
   },
   "setting_config": {
     "prompt": {
