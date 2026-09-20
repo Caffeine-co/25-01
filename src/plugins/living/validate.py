@@ -69,9 +69,10 @@ class SwitchAction(SchemaModel):
 # NextAction = Annotated[ExitAction | StayAction | SwitchAction, Field(discriminator="type")]
 NextAction = ExitAction | StayAction | SwitchAction
 
-def validate_message_segments(message: list[list[BaseModel]] | None) -> None:
-    if message is None:
-        return
+# def validate_message_segments(message: list[list[BaseModel]] | None) -> None:
+def validate_message_segments(message: list[list[BaseModel]]) -> None:
+    # if message is None:
+        # return
     for index, segments in enumerate(message):
         reply_count = sum(
             isinstance(segment, ReplySegment)
@@ -222,9 +223,12 @@ class PreChatValidate(SchemaModel):
 class GroupChatValidate(SchemaModel):
     new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
     chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
-    message: list[list[GroupMessageSegment]] | None = Field(
-        default=None,
-        description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
+    # message: list[list[GroupMessageSegment]] | None = Field(
+    #     default=None,
+    #     description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
+    # )
+    message: list[list[GroupMessageSegment]] = Field(
+        description="消息列表；chat=true时必须非空，chat=false时必须为空列表，每个message[i]中reply上限一个，且reply不能单独存在"
     )
     group_impression: list[GeneralImpressionItem] = Field(description="根据聊天记录重新总结的群聊印象列表")
     user_impression: list[GroupUserImpression] = Field(description="本次新形成的用户事件印象")
@@ -232,44 +236,55 @@ class GroupChatValidate(SchemaModel):
 
     @field_validator("message")
     @classmethod
-    def validate_message(cls, value: list[list[GroupMessageSegment]] | None):
+    # def validate_message(cls, value: list[list[GroupMessageSegment]] | None):
+    def validate_message(cls, value: list[list[GroupMessageSegment]]):
         validate_message_segments(value)
         return value
 
     @model_validator(mode="after")
     def validate_conditions(self) -> Self:
         if self.chat:
-            if self.message is None:
-                raise ValueError("chat=true 时必须输出 message")
+            # if self.message is None:
+            if not self.message:
+                # raise ValueError("chat=true 时必须输出 message")
+                raise ValueError("chat=true 时 message 不能为空")
         else:
             if self.message:
-                raise ValueError("chat=false 时不得输出 message")
+                # raise ValueError("chat=false 时不得输出 message")
+                raise ValueError("chat=false 时 message 必须为空列表")
         return self
 
 class FriendChatValidate(SchemaModel):
     new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
     chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
-    message: list[list[FriendMessageSegment]] | None = Field(
-        default=None,
-        description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
+    # message: list[list[FriendMessageSegment]] | None = Field(
+    #     default=None,
+    #     description="消息列表，仅在chat=true时提供，每个message[i]中reply上限一个，且reply不能单独存在"
+    # )
+    message: list[list[FriendMessageSegment]] = Field(
+        description="消息列表；chat=true时必须非空，chat=false时必须为空列表，每个message[i]中reply上限一个，且reply不能单独存在"
     )
     user_impression: list[GeneralImpressionItem] = Field(description="本次新形成的用户事件印象列表")
     next_action: NextAction = Field(description="完成当前会话处理后的下一步行为")
 
     @field_validator("message")
     @classmethod
-    def validate_message(cls, value: list[list[FriendMessageSegment]] | None):
+    # def validate_message(cls, value: list[list[FriendMessageSegment]] | None):
+    def validate_message(cls, value: list[list[FriendMessageSegment]]):
         validate_message_segments(value)
         return value
 
     @model_validator(mode="after")
     def validate_conditions(self) -> Self:
         if self.chat:
-            if self.message is None:
-                raise ValueError("chat=true 时必须输出 message")
+            # if self.message is None:
+            if not self.message:
+                # raise ValueError("chat=true 时必须输出 message")
+                raise ValueError("chat=true 时 message 不能为空")
         else:
             if self.message:
-                raise ValueError("chat=false 时不得输出 message")
+                # raise ValueError("chat=false 时不得输出 message")
+                raise ValueError("chat=false 时 message 必须为空列表")
         return self
 
 class GroupMemory(SchemaModel):
