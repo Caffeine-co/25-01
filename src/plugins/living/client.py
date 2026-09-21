@@ -118,9 +118,11 @@ async def chatting_request(message: list, current_session: dict) -> dict:
         parsed = await request_llm(message, FriendChatValidate)
     return parsed.model_dump(mode="python")
 
-async def memory_request(message: list) -> dict:
+# async def memory_request(message: list) -> dict:
+async def memory_request(message: list) -> list[dict]:
     parsed = await request_llm(message, MemoryValidate)
-    return parsed.model_dump(mode="python")
+    # return parsed.model_dump(mode="python")
+    return parsed.model_dump(mode="python")["users"]
 
 async def status_request(message: list) -> dict:
     parsed = await request_llm(message, StatusValidate)

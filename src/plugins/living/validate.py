@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, RootModel, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from src.plugins.living.config import chat_cfg, setting_cfg
 from src.plugins.living.utils import read_json_async, write_json
 from typing import Annotated, Literal, Self
@@ -308,8 +308,10 @@ class UserMemory(SchemaModel):
     portrait: str = Field(description="根据记忆信息总结的简短用户画像")
     memory: list[Memory] = Field(description="该用户对应的长期事件记忆列表，按时间先后排序")
 
-class MemoryValidate(RootModel[list[UserMemory]]):
-    pass
+# class MemoryValidate(RootModel[list[UserMemory]]):
+    # pass
+class MemoryValidate(SchemaModel):
+    users: list[UserMemory] = Field(description="归档后的完整用户记忆列表")
 
 class StatusValidate(SchemaModel):
     new_status: CharacterStatus

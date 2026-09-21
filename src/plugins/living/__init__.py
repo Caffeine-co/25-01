@@ -188,7 +188,7 @@ async def memory_archive() -> None:
             continue
         for user in memory_output:
             await update_user_all_memory(user["user_id"], user["portrait"], user["memory"])
-    logger.success(f"Memory archive complete")
+    logger.success(f"Memory archive finished")
 
 async def session_update() -> None:
     logger.info(f"Start updating session info...")
