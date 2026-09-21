@@ -63,7 +63,7 @@ async def _openai_responses(message: list, validate_model: type[T], chunks: list
         model = llm_cfg["model_name"],
         input = message,
         # text_format = validate_model,
-        text = {"format": {
+        text = {"format": {    # type: ignore
             "type": "json_schema",
             "name": validate_model.__name__,
             "schema": _responses_schema(validate_model),
@@ -79,14 +79,23 @@ async def _openai_responses(message: list, validate_model: type[T], chunks: list
     # return response.output_parsed
     return validate_model.model_validate_json(response.output_text)
 
+interface_map = {
+    "openai.responses": _openai_responses,
+    "openai.chat.completions": _openai_chat_completions
+}
+
 async def request_llm(message: list, validate_model: type[T]) -> T:
-    match llm_cfg["interface_type"]:
-        case "openai.responses":
-            request_func = _openai_responses
-        case "openai.chat.completions":
-            request_func = _openai_chat_completions
-        case _:
-            raise ValueError(f"Unsupported interface type: {llm_cfg['interface_type']}")
+    # match llm_cfg["interface_type"]:
+        # case "openai.responses":
+            # request_func = _openai_responses
+        # case "openai.chat.completions":
+            # request_func = _openai_chat_completions
+        # case _:
+            # raise ValueError(f"Unsupported interface type: {llm_cfg['interface_type']}")
+    try:
+        request_func = interface_map[llm_cfg["interface_type"]]
+    except KeyError:
+        raise ValueError(f"Unsupported interface type: {llm_cfg['interface_type']}")
     for attempt in range(llm_cfg["retry_times"] + 1):
         chunks: list[str] = []
         try:
@@ -105,7 +114,6 @@ async def request_llm(message: list, validate_model: type[T]) -> T:
             else:
                 logger.exception(f"llm request api all failed: \n{e}")
     raise RuntimeError("llm request failed")
-
 
 async def pre_chat_request(message: list) -> dict:
     parsed = await request_llm(message, PreChatValidate)
