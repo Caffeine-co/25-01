@@ -4,7 +4,7 @@ from openai import AsyncOpenAI
 from src.plugins.living.config import llm_cfg
 from src.plugins.living.validate import GroupChatValidate, FriendChatValidate, MemoryValidate, StatusValidate, PreChatValidate
 from typing import TypeVar
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -15,7 +15,7 @@ client = AsyncOpenAI(
     timeout=httpx2.Timeout(**llm_cfg["timeout"])
 )
 
-def _responses_schema(validate_model: type[BaseModel]) -> dict:
+def _struct_schema(validate_model: type[BaseModel]) -> dict:
     """展开本项目非递归模型的引用，避免 anyOf 分支只有 $ref。"""
     schema = validate_model.model_json_schema()
     definitions = schema.get("$defs", {})
@@ -39,24 +39,47 @@ def _responses_schema(validate_model: type[BaseModel]) -> dict:
             for key, value in node.items()
             if key != "$defs"
         }
-        # 字符串 Literal 使用单值 enum，保持取值约束。
-        if result.get("type") == "string" and "const" in result:
+        # 字符串和数字 Literal 使用单值 enum，保持取值约束。
+        if result.get("type") in ("string", "integer", "number") and "const" in result:
             result["enum"] = [result.pop("const")]
         return result
     return expand(schema)
+
+def _validate_output(validate_model: type[T], content: str | None) -> T:
+    content = (content or "").strip()
+    lines = content.splitlines()
+    if (
+        len(lines) >= 3
+        and lines[0].strip().lower() in ("```", "```json")
+        and lines[-1].strip() == "```"
+    ):
+        content = "\n".join(lines[1:-1]).strip()
+    if not content:
+        raise ValueError("Empty structured output")
+    return validate_model.model_validate_json(content)
 
 async def _openai_chat_completions(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
     async with client.chat.completions.stream(
         model = llm_cfg["model_name"],
         messages = message,
-        response_format = validate_model,
+        # response_format = validate_model,
+        response_format = {    # type: ignore
+            "type": "json_schema",
+            "json_schema": {
+                "name": validate_model.__name__,
+                "schema": _struct_schema(validate_model),
+                "strict": True
+            }
+        },
         reasoning_effort = llm_cfg["reasoning_effort"]
     ) as stream:
         async for event in stream:
             if event.type == "content.delta":
                 chunks.append(event.delta)
         completion = await stream.get_final_completion()
-    return completion.choices[0].message.parsed
+    # return completion.choices[0].message.parsed
+    # return validate_model.model_validate_json(completion.choices[0].message.content)
+    return _validate_output(validate_model, completion.choices[0].message.content)
 
 async def _openai_responses(message: list, validate_model: type[T], chunks: list[str]) -> T | None:
     async with client.responses.stream(
@@ -66,8 +89,8 @@ async def _openai_responses(message: list, validate_model: type[T], chunks: list
         text = {"format": {    # type: ignore
             "type": "json_schema",
             "name": validate_model.__name__,
-            "schema": _responses_schema(validate_model),
-            "strict": True,
+            "schema": _struct_schema(validate_model),
+            "strict": True
         }},
         reasoning = {"effort": llm_cfg["reasoning_effort"]},    # type: ignore
         store = False
@@ -77,7 +100,8 @@ async def _openai_responses(message: list, validate_model: type[T], chunks: list
                 chunks.append(event.delta)
         response = await stream.get_final_response()
     # return response.output_parsed
-    return validate_model.model_validate_json(response.output_text)
+    # return validate_model.model_validate_json(response.output_text)
+    return _validate_output(validate_model, response.output_text)
 
 interface_map = {
     "openai.responses": _openai_responses,
@@ -106,8 +130,9 @@ async def request_llm(message: list, validate_model: type[T]) -> T:
         except Exception as e:
             if chunks:
                 try:
-                    return validate_model.model_validate_json("".join(chunks))
-                except ValidationError:
+                    # return validate_model.model_validate_json("".join(chunks))
+                    return _validate_output(validate_model, "".join(chunks))
+                except ValueError:
                     pass
             if attempt < llm_cfg["retry_times"]:
                 logger.exception(f"llm request api failed, retrying {attempt + 1} times: \n{e}")
