@@ -3,8 +3,6 @@ import nonebot
 import sys
 from nonebot.adapters.onebot.v11.adapter import Adapter as ONEBOT_V11Adapter
 from nonebot.log import logger, default_filter
-from nonebot.plugin import _managers
-from nonebot.plugin.manager import PluginManager
 from rich.align import Align
 from rich.console import Console
 from rich.panel import Panel
@@ -78,11 +76,6 @@ def get_configs() -> dict[str, Any]:
         sys.exit(1)
     return configs
 
-def import_living_plugin() -> None:
-    manager = PluginManager(["src.plugins.placeholder"])
-    _managers.append(manager)
-    import src.plugins.living
-
 if __name__ == "__main__":
     ver = "v-dev"
 
@@ -101,6 +94,6 @@ if __name__ == "__main__":
     driver = nonebot.get_driver()
     driver.register_adapter(ONEBOT_V11Adapter)
 
-    import_living_plugin()
+    import src.plugins.living
 
     nonebot.run()
