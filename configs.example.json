@@ -6,7 +6,8 @@
     "base_url": "https://api.deepseek.com",
     "model_name": "deepseek-flash",
     "reasoning_effort": "high",
-    "timeout": {
+    "deadline_timeout": 180,
+    "http_timeout": {
       "connect": 10,
       "read": 120,
       "write": 30,

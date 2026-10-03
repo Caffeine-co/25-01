@@ -1,3 +1,4 @@
+import asyncio
 import httpx2
 from nonebot.log import logger
 from openai import AsyncOpenAI
@@ -12,7 +13,7 @@ client = AsyncOpenAI(
     api_key=llm_cfg["api_key"],
     base_url=llm_cfg["base_url"],
     max_retries=0,
-    timeout=httpx2.Timeout(**llm_cfg["timeout"])
+    timeout=httpx2.Timeout(**llm_cfg["http_timeout"])
 )
 
 def _struct_schema(validate_model: type[BaseModel]) -> dict:
@@ -123,7 +124,9 @@ async def request_llm(message: list, validate_model: type[T]) -> T:
     for attempt in range(llm_cfg["retry_times"] + 1):
         chunks: list[str] = []
         try:
-            parsed = await request_func(message, validate_model, chunks)
+            # parsed = await request_func(message, validate_model, chunks)
+            async with asyncio.timeout(llm_cfg["deadline_timeout"]):
+                parsed = await request_func(message, validate_model, chunks)
             if parsed is None:
                 raise ValueError("Parsing content error")
             return parsed
