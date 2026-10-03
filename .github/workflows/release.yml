@@ -77,12 +77,13 @@ jobs:
         
         # 核心 Nuitka 编译命令
         python -m nuitka --onefile \
-                 --assume-yes-for-downloads \
-                 --include-module=nonebot.drivers.fastapi \
-                 --output-dir=build \
-                 --output-filename="$BINARY_NAME" \
-                 $ICON_FLAG \
-                 bot.py
+          --assume-yes-for-downloads \
+          --include-module=nonebot.drivers.fastapi \
+          --onefile-tempdir-spec="{CACHE_DIR}/25-01/${VERSION}" \
+          --output-dir=build \
+          --output-filename="$BINARY_NAME" \
+          $ICON_FLAG \
+          bot.py
 
     - name: Package artifacts
       run: |
