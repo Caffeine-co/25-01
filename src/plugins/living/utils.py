@@ -124,7 +124,7 @@ async def write_json(path: str | Path, content: Any) -> None:
 
 async def download_image_to_temp(url: str, temp_name: str) -> None:
     Path(chat_cfg["temp_image_dir"]).mkdir(parents=True, exist_ok=True)
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
         response.raise_for_status()
         async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{temp_name}", "wb") as f:
