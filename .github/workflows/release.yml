@@ -79,7 +79,7 @@ jobs:
         python -m nuitka --onefile \
           --assume-yes-for-downloads \
           --include-module=nonebot.drivers.fastapi \
-          --onefile-tempdir-spec="{CACHE_DIR}/25-01/${VERSION}" \
+          --onefile-tempdir-spec="{CACHE_DIR}/25-01/${VERSION}/onefile_{PID}" \
           --output-dir=build \
           --output-filename="$BINARY_NAME" \
           $ICON_FLAG \
