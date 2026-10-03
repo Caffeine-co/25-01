@@ -274,7 +274,7 @@ async def record(event: GroupMessageEvent | PrivateMessageEvent):
                 await download_image_to_temp(image_url, image_id)
             except Exception as e:
                 # logger.error(f"download message_{event.message_id}'s image_{i + 1} error: {e}")
-                logger.error(f"download message_{event.message_id}'s image_{i + 1} failed: {type(e).__name__}: {e!r}")
+                logger.exception(f"download message_{event.message_id}'s image_{i + 1} failed: {type(e).__name__}: {e!r}")
             else:
                 image_names.append(image_id)
     img_data = json.dumps(image_names, ensure_ascii=False)
