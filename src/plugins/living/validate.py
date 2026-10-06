@@ -194,7 +194,7 @@ class CharacterStatus(SchemaModel):
     obligation_load: StatusScore = Field(description="当前责任和任务负担，0-100")
 
     @classmethod
-    def _default(cls) -> Self:
+    def default(cls) -> Self:
         return cls(**setting_cfg["default_status"])
 
     @classmethod
@@ -203,25 +203,88 @@ class CharacterStatus(SchemaModel):
             content = await read_json_async(chat_cfg["status_path"])
             return cls(**content)
         except FileNotFoundError:
-            return cls._default()
+            return cls.default()
         except Exception:
             raise
 
-    async def save(self) -> None:
+    async def _save(self) -> None:
         content = self.model_dump(mode="json")
         await write_json(chat_cfg["status_path"], content)
 
     async def update(self, content: dict) -> None:
-        for key, value in content.items():
-            setattr(self, key, value)
-        await self.save()
+        """
+        if "changes" in content:
+            updates = {"current_time": content["current_time"]}
+            for change in content["changes"]:
+                updates[change["field"]] = change["value"]
+        else:
+            # 兼容旧版完整 CharacterStatus dict。
+            updates = content
+        """
+        updates = {"current_time": content["current_time"]}
+        for change in content["changes"]:
+            updates[change["field"]] = change["value"]
+        merged = {
+            **self.model_dump(mode="python"),
+            **updates
+        }
+        # 一次性验证最终完整状态。
+        #
+        # 先验证、后修改 self，可以防止：
+        # 前几个字段已经 setattr 成功，
+        # 后面的非法字段才抛异常，
+        # 导致内存里的 CharacterStatus 处于半更新状态。
+        validated = type(self).model_validate(merged)
+        for key in updates:
+            setattr(self, key, getattr(validated, key))
+        await self._save()
+
+STATUS_CHANGE_FIELDS = tuple(
+    field_name
+    for field_name in CharacterStatus.model_fields.keys()
+    if field_name != "current_time"
+)
+
+class StatusChange(SchemaModel):
+    field: str = Field(description=f"发生变化的状态字段名，只能从以下提供的合法字段中选择：{', '.join(STATUS_CHANGE_FIELDS)}")
+    value: str | int | float = Field(description="该状态字段变化后的最终值")
+
+    @model_validator(mode="after")
+    def validate_change(self) -> Self:
+        if self.field not in STATUS_CHANGE_FIELDS:
+            raise ValueError(f"未知状态字段: {self.field}")
+        # 用完整 CharacterStatus Schema 验证这个字段真正允许的类型和范围。
+        #
+        # 例如：
+        # energy_level = 101        -> 拒绝
+        # energy_level = "很累"     -> 拒绝
+        # body_temperature_c = 80   -> 拒绝
+        candidate = CharacterStatus.default().model_dump(mode="python")
+        candidate[self.field] = self.value
+        CharacterStatus.model_validate(candidate)
+        return self
+
+class CharacterStatusUpdate(SchemaModel):
+    current_time: str = Field(description="更新后的当前时间，必须等于输入提供的目标时间")
+    changes: list[StatusChange] = Field(
+        description="相较于历史状态实际发生变化的字段列表，未变化字段不得重复输出，如果没有字段变化则输出空列表"
+    )
+
+    @model_validator(mode="after")
+    def validate_changes(self) -> Self:
+        fields = [change.field for change in self.changes]
+        if len(fields) != len(set(fields)):
+            raise ValueError("changes 中不得重复更新同一状态字段")
+        return self
 
 class PreChatValidate(SchemaModel):
-    new_status: CharacterStatus = Field(description="根据历史状态、当前时间推演出的完整新状态")
+    # new_status: CharacterStatus = Field(description="根据历史状态、当前时间推演出的完整新状态")
+    new_status: CharacterStatusUpdate = Field(description = "从历史状态推演到目标时间后产生的状态变化")
     session: Session
 
 class GroupChatValidate(SchemaModel):
-    new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
+    # new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
+    new_status: CharacterStatusUpdate = Field(description = "根据历史状态、当前时间和聊天内容产生的状态变化")
     # chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
     chat: bool = Field(description="本次是否发送消息，false时message必须为[]，true时message必须非空")
     # message: list[list[GroupMessageSegment]] | None = Field(
@@ -256,7 +319,8 @@ class GroupChatValidate(SchemaModel):
         return self
 
 class FriendChatValidate(SchemaModel):
-    new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
+    # new_status: CharacterStatus = Field(description="根据历史状态、当前时间和聊天内容推演出的完整新状态")
+    new_status: CharacterStatusUpdate = Field(description = "根据历史状态、当前时间和聊天内容产生的状态变化")
     # chat: bool = Field(description="本次是否发送消息，为false时不得提供message")
     chat: bool = Field(description="本次是否发送消息，false时message必须为[]，true时message必须非空")
     # message: list[list[FriendMessageSegment]] | None = Field(
@@ -314,4 +378,5 @@ class MemoryValidate(SchemaModel):
     users: list[UserMemory] = Field(description="归档后的完整用户记忆列表")
 
 class StatusValidate(SchemaModel):
-    new_status: CharacterStatus
+    # new_status: CharacterStatus
+    new_status: CharacterStatusUpdate
