@@ -1,10 +1,8 @@
 import math
 from datetime import datetime, timedelta, timezone
-from src.plugins.living.config import setting_cfg
+from src.plugins.living.config import setting_cfg, active_model
 from src.plugins.living.utils import ts_to_time
 
-
-active_model_args = setting_cfg["active_model_args"]
 
 def ts_to_hour_and_weekday(timestamp: int) -> tuple[float, str]:
     local_tz = timezone(timedelta(hours=setting_cfg["tz_offset"]))
@@ -39,10 +37,10 @@ def sigmoid(value: float) -> float:
     return exp_value / (1.0 + exp_value)
 
 def awake_weight(current_hour: float,) -> float:
-    wake_hour = active_model_args["wake_hour"]
-    sleep_hour = active_model_args["sleep_hour"]
-    steepness = active_model_args["awake_edge_steepness"]
-    sleep_floor = active_model_args["sleep_floor"]
+    wake_hour = active_model["wake_hour"]
+    sleep_hour = active_model["sleep_hour"]
+    steepness = active_model["awake_edge_steepness"]
+    sleep_floor = active_model["sleep_floor"]
     hours_after_wake = (current_hour - wake_hour) % 24.0
     awake_duration = (sleep_hour - wake_hour) % 24.0
     if awake_duration == 0:
@@ -64,7 +62,7 @@ def awake_weight(current_hour: float,) -> float:
 
 def calculate_peak_rate(current_hour: float,) -> float:
     total_peak_rate = 0.0
-    activity_peaks = active_model_args["activity_peaks"]
+    activity_peaks = active_model["activity_peaks"]
     for peak in activity_peaks:
         peak_weight = gaussian_time_peak(
             current_hour=current_hour,
@@ -79,16 +77,16 @@ def calculate_peak_rate(current_hour: float,) -> float:
 
 def calculate_open_rate(timestamp: int) -> float:
     current_hour, weekday = ts_to_hour_and_weekday(timestamp)
-    base_rate = active_model_args["base_rate_per_hour"]
+    base_rate = active_model["base_rate_per_hour"]
     peak_rate = calculate_peak_rate(
         current_hour=current_hour
     )
     current_awake_weight = awake_weight(
         current_hour=current_hour
     )
-    weekday_multipliers = active_model_args["weekday_multipliers"]
+    weekday_multipliers = active_model["weekday_multipliers"]
     weekday_multiplier = weekday_multipliers.get(weekday, 1.0)
-    global_multiplier = active_model_args["global_rate_multiplier"]
+    global_multiplier = active_model["global_rate_multiplier"]
     rate_per_hour = (
         global_multiplier
         * weekday_multiplier
@@ -105,7 +103,7 @@ def rate_to_probability(rate_per_hour: float, interval_seconds: int) -> float:
 
 def active_probability(timestamp: int) -> float:
     rate_per_hour = calculate_open_rate(timestamp=timestamp)
-    interval_seconds = active_model_args["poll_interval_seconds"]
+    interval_seconds = active_model["poll_interval_seconds"]
     probability = rate_to_probability(
         rate_per_hour=rate_per_hour,
         interval_seconds=interval_seconds

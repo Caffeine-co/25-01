@@ -7,7 +7,7 @@
   "sleep_floor": 0.035,
   "awake_edge_steepness": 3.2,
   "weekday_multipliers": {
-    "day_0": 0.95,
+    "0": 0.95,
     "1": 0.95,
     "2": 1.00,
     "3": 1.00,
