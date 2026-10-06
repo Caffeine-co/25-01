@@ -1,0 +1,56 @@
+{
+  "poll_interval_seconds": 600,
+  "global_rate_multiplier": 1.65,
+  "base_rate_per_hour": 0.32,
+  "wake_hour": 11.0,
+  "sleep_hour": 3.5,
+  "sleep_floor": 0.035,
+  "awake_edge_steepness": 3.2,
+  "weekday_multipliers": {
+    "day_0": 0.95,
+    "1": 0.95,
+    "2": 1.00,
+    "3": 1.00,
+    "4": 1.08,
+    "5": 1.15,
+    "6": 1.10
+  },
+  "activity_peaks": [
+    {
+      "name": "起床后查看通知",
+      "center_hour": 11.5,
+      "width_hour": 0.55,
+      "rate_per_hour": 0.85
+    },
+    {
+      "name": "下午浏览与自拍发布",
+      "center_hour": 14.3,
+      "width_hour": 1.15,
+      "rate_per_hour": 0.55
+    },
+    {
+      "name": "上学前与移动途中",
+      "center_hour": 17.2,
+      "width_hour": 0.65,
+      "rate_per_hour": 0.45
+    },
+    {
+      "name": "放学后集中查看",
+      "center_hour": 21.8,
+      "width_hour": 0.95,
+      "rate_per_hour": 0.85
+    },
+    {
+      "name": "Nightcord活动期间",
+      "center_hour": 0.7,
+      "width_hour": 1.25,
+      "rate_per_hour": 1.20
+    },
+    {
+      "name": "作业结束后的搜索与回查",
+      "center_hour": 2.6,
+      "width_hour": 0.55,
+      "rate_per_hour": 0.90
+    }
+  ]
+}

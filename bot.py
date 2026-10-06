@@ -13,7 +13,7 @@ from typing import Any
 def logo_startup(version: str) -> None:
     console = Console()
     console.clear()
-    logo = r"""
+    logo: str = r"""
  _____    ______     ___  ______     ____        
 /_____/\ /_____/\   /__/\/_____/\   /___/\       
 \:::_:\ \\::::_\/_  \::\/\:::_ \ \  \_::\ \      
@@ -70,8 +70,16 @@ def get_configs() -> dict[str, Any]:
     try:
         with open("configs.json", "r", encoding="utf-8") as f:
             configs: dict = json.load(f)
+        with open("default_status.json", "r", encoding="utf-8") as f:
+            default_status: dict = json.load(f)
+        with open("active_model.json", "r", encoding="utf-8") as f:
+            active_model: dict = json.load(f)
+        configs.update({
+            "active_model": active_model,
+            "default_status": default_status
+        })
     except Exception as e:
-        logger.error(f"Failed to load configs: {e}")
+        logger.exception(f"Failed to load configs: {e}")
         input("Press Enter to quit...")
         sys.exit(1)
     return configs
@@ -81,7 +89,7 @@ if __name__ == "__main__":
 
     init_log()
     logo_startup(ver)
-    extra_configs = get_configs()
+    runtime_configs = get_configs()
 
     nonebot.init(
         version=ver,
@@ -89,7 +97,7 @@ if __name__ == "__main__":
         localstore_use_cwd=True,
         command_start={"/"},
         command_sep={" "},
-        **extra_configs
+        **runtime_configs
     )
     driver = nonebot.get_driver()
     driver.register_adapter(ONEBOT_V11Adapter)

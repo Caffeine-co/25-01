@@ -125,7 +125,7 @@ async def request_llm(message: list, validate_model: type[T]) -> T:
         chunks: list[str] = []
         try:
             # parsed = await request_func(message, validate_model, chunks)
-            async with asyncio.timeout(llm_cfg["deadline_timeout"]):
+            async with asyncio.timeout(llm_cfg["absolute_timeout"]):
                 parsed = await request_func(message, validate_model, chunks)
             if parsed is None:
                 raise ValueError("Parsing content error")
