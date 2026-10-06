@@ -152,7 +152,7 @@ async def get_meta_image_filename(meta_id: int) -> str:
 
 async def meta_image_to_base64(meta_id: int, b64_mark: bool) -> str:
     meta_name = await get_meta_image_filename(meta_id)
-    async with aiofiles.open(f"{chat_cfg['temp_image_dir']}/{meta_name}", "rb") as f:
+    async with aiofiles.open(f"{chat_cfg['meta_image_dir']}/{meta_name}", "rb") as f:
         data = await f.read()
     image = base64.b64encode(data).decode("utf-8")
     return f"base64://{image}" if b64_mark else image
