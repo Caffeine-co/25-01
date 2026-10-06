@@ -116,7 +116,7 @@ async def chat_dispatch() -> None:
     random_value = random.random()
     if random_value > active_value:
         return
-    logger.info(f"Open the software")
+    logger.info(f"Open the cell phone and enter the software")
     status = await CharacterStatus.load()
     pre_chat_input = await get_pre_chat_input(status)
     try:
@@ -127,7 +127,7 @@ async def chat_dispatch() -> None:
         return
     await status.update(pre_chat_output["new_status"])
     session = pre_chat_output["session"]
-    logger.info(f"Open the session {session['type']}_{session['id']}")
+    logger.info(f"Enter the session {session['type']}_{session['id']}")
     for i in range(chat_cfg["max_session_rounds"]):
         chatting_input, unread_msg_list = await get_chatting_input(status, session)
         try:
@@ -148,17 +148,20 @@ async def chat_dispatch() -> None:
         next_action = chatting_output["next_action"]
         match next_action["type"]:
             case "exit":
-                logger.info(f"Close the software")
+                logger.info(f"Exit the software, close the cell phone")
                 break
             case "stay":
-                logger.info(f"Stay in the current chat")
-                await asyncio.sleep(
-                    random.randint(
-                        chat_cfg["stay_interval_range"]["min"],
-                        chat_cfg["stay_interval_range"]["max"]
-                    )
+                if i + 1 == chat_cfg["max_session_rounds"]:
+                    logger.info(f"Maximum of session rounds reached, forced shutdown, originally stay")
+                waiting_time = random.randint(
+                    chat_cfg["stay_interval_range"]["min"],
+                    chat_cfg["stay_interval_range"]["max"]
                 )
+                logger.info(f"Stay in the current chat, waiting {waiting_time} seconds")
+                await asyncio.sleep(waiting_time)
             case "switch":
+                if i + 1 == chat_cfg["max_session_rounds"]:
+                    logger.info(f"Maximum of session rounds reached, forced shutdown, originally switch")
                 session = next_action["session"]
                 logger.info(f"Switch to next session {session['type']}_{session['id']}")
 
@@ -265,7 +268,7 @@ private_msg = on_message(rule=check_private)
 
 @group_msg.handle()
 @private_msg.handle()
-async def record(event: GroupMessageEvent | PrivateMessageEvent):
+async def _record(event: GroupMessageEvent | PrivateMessageEvent):
     if check_null_msg(event.original_message):
         return
     content, image_urls = await format_received_msg(event.original_message, event.self_id)
