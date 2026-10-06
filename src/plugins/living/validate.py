@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from src.plugins.living.config import chat_cfg, setting_cfg
+from src.plugins.living.config import chat_cfg, default_status
 from src.plugins.living.utils import read_json_async, write_json
 from typing import Annotated, Literal, Self
 
@@ -195,7 +195,7 @@ class CharacterStatus(SchemaModel):
 
     @classmethod
     def default(cls) -> Self:
-        return cls(**setting_cfg["default_status"])
+        return cls(**default_status)
 
     @classmethod
     async def load(cls) -> Self:
