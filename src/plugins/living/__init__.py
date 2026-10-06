@@ -153,6 +153,7 @@ async def chat_dispatch() -> None:
             case "stay":
                 if i + 1 == chat_cfg["max_session_rounds"]:
                     logger.info(f"Maximum of session rounds reached, forced shutdown, originally stay")
+                    break
                 waiting_time = random.randint(
                     chat_cfg["stay_interval_range"]["min"],
                     chat_cfg["stay_interval_range"]["max"]
@@ -162,6 +163,7 @@ async def chat_dispatch() -> None:
             case "switch":
                 if i + 1 == chat_cfg["max_session_rounds"]:
                     logger.info(f"Maximum of session rounds reached, forced shutdown, originally switch")
+                    break
                 session = next_action["session"]
                 logger.info(f"Switch to next session {session['type']}_{session['id']}")
 
