@@ -216,3 +216,29 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# ==============================
+# 25:01 runtime files
+# ==============================
+
+# Private runtime configuration
+/configs.json
+/active_model.json
+/default_status.json
+/location.json
+/image_metadata.json
+
+# Runtime state
+/status.json
+
+# SQLite databases
+/*.db
+/*.db-journal
+/*.db-wal
+/*.db-shm
+
+# Runtime directories
+/data/
+/temp_image/
+/logs/
