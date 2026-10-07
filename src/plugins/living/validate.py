@@ -18,7 +18,7 @@ class Session(SchemaModel):
 
     @model_validator(mode="after")
     def validate_session(self) -> Self:
-        run_mode = chat_cfg["run_mode"]
+        # run_mode = chat_cfg["run_mode"]
         # if {"type": self.type, "id": self.id} not in chat_cfg[f"{run_mode}s"]:
         if not session_allowed({"type": self.type, "id": self.id}):
             raise ValueError(f"session {self.type}:{self.id} 不在允许名单中")

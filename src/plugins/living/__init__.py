@@ -218,15 +218,15 @@ async def session_update() -> None:
     for rg in raw_group_list:
         # if rg["group_id"] in group_list:
         session = {"type": "group", "id": rg["group_id"]}
+        session_cache.append(session)
         if session_allowed(session):
             await update_group_info(rg["group_id"], rg["group_name"], rg["member_count"])
-            session_cache.append(session)
     for rf in raw_friend_list:
         # if rf["user_id"] in friend_list:
         session = {"type": "friend", "id": rf["user_id"]}
+        session_cache.append(session)
         if session_allowed(session):
             await update_friend_info(rf["user_id"], rf["nickname"])
-            session_cache.append(session)
     await refresh_session_cache(session_cache)
     logger.success(f"Session info update complete")
 
@@ -271,10 +271,12 @@ async def _() -> None:
 async def check_group(event: GroupMessageEvent) -> bool:
     # run_mode = chat_cfg["run_mode"]
     # return {"type": "group", "id": event.group_id} in chat_cfg[f"{run_mode}s"]
+    await cache_session({"type": "group", "id": event.group_id})
     return session_allowed({"type": "group", "id": event.group_id})
 async def check_private(event: PrivateMessageEvent) -> bool:
     # run_mode = chat_cfg["run_mode"]
     # return {"type": "friend", "id": event.user_id} in chat_cfg[f"{run_mode}s"]
+    await cache_session({"type": "friend", "id": event.user_id})
     return session_allowed({"type": "friend", "id": event.user_id})
 
 group_msg = on_message(rule=check_group)
@@ -300,7 +302,6 @@ async def _record(event: GroupMessageEvent | PrivateMessageEvent):
     img_data = json.dumps(image_names, ensure_ascii=False)
     match event.message_type:
         case "group":
-            await cache_session({"type": "group", "id": event.group_id})
             await record_received_group_msg(event.group_id, {
                 "time": event.time,
                 "message_id": event.message_id,
@@ -315,7 +316,6 @@ async def _record(event: GroupMessageEvent | PrivateMessageEvent):
                     True
                 )
         case "private":
-            await cache_session({"type": "friend", "id": event.user_id})
             await record_received_friend_msg(event.user_id, {
                 "time": event.time,
                 "message_id": event.message_id,
