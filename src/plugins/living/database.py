@@ -7,6 +7,8 @@ from src.plugins.living.utils import delete_temp_image
 
 _session_db_write_lock = asyncio.Lock()
 
+_session_cache_memory: set[tuple[str, int]] = set()
+
 def _connect_session_db() -> aiosqlite.Connection:
     return aiosqlite.connect(
         chat_cfg["session_info_db_path"],
@@ -54,6 +56,15 @@ async def init_session_info_db() -> None:
                 )
                 """
             )
+            cursor = await db.execute(
+                """
+                SELECT type, id
+                FROM session_cache
+                """
+            )
+            rows = await cursor.fetchall()
+            _session_cache_memory.clear()
+            _session_cache_memory.update((row[0], row[1]) for row in rows)
             await db.commit()
 
 async def get_group_info(group_id: int) -> dict:
@@ -121,7 +132,12 @@ async def get_session_cache() -> list[dict]:
         return [{"type": row["type"], "id": row["id"]} for row in rows]
 
 async def cache_session(session: dict) -> None:
+    session_key = (session["type"], session["id"])
+    if session_key in _session_cache_memory:
+        return
     async with _session_db_write_lock:
+        if session_key in _session_cache_memory:
+            return
         async with _connect_session_db() as db:
             await db.execute(
                 """
@@ -129,24 +145,30 @@ async def cache_session(session: dict) -> None:
                 VALUES (?, ?)
                 ON CONFLICT(type, id) DO NOTHING
                 """,
-                (session["type"], session["id"])
+                session_key
             )
             await db.commit()
+        _session_cache_memory.add(session_key)
 
 async def refresh_session_cache(session_list: list[dict]) -> None:
+    session_keys = {(session["type"], session["id"]) for session in session_list}
     async with _session_db_write_lock:
         async with _connect_session_db() as db:
             await db.execute("DELETE FROM session_cache")
-            if session_list:
+            # if session_list:
+            if session_keys:
                 await db.executemany(
                     """
                     INSERT INTO session_cache (type, id)
                     VALUES (?, ?)
-                    ON CONFLICT(type, id) DO NOTHING
                     """,
-                    [(session["type"], session["id"]) for session in session_list]
+                    # ON CONFLICT(type, id) DO NOTHING
+                    # [(session["type"], session["id"]) for session in session_list]
+                    session_keys
                 )
             await db.commit()
+        _session_cache_memory.clear()
+        _session_cache_memory.update(session_keys)
 
 async def update_group_info(group_id: int, group_name: str, member_count: int) -> None:
     async with _session_db_write_lock:
