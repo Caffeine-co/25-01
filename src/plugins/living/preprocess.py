@@ -1,10 +1,8 @@
 import json
 import time
-
-from src.plugins.living import session_allowed
 from src.plugins.living.config import setting_cfg, chat_cfg
 from src.plugins.living.database import get_group_info, get_group_msg_list, get_latest_group_msg, get_group_impression, get_friend_info, get_latest_friend_msg, get_friend_msg_list, get_user_portrait, get_user_impression, get_user_memory, get_user_all_memory, get_session_activity, get_session_cache
-from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, temp_image_to_base64, level_text, read_json_async, format_content_item
+from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, temp_image_to_base64, level_text, read_json_async, format_content_item, session_allowed
 from src.plugins.living.validate import CharacterStatus
 
 
