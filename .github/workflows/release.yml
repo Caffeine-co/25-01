@@ -64,6 +64,8 @@ jobs:
       env:
         OS_NAME: ${{ matrix.os }}
       run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        
         BINARY_NAME="$PROJECT_NAME"
         ICON_FLAG=""
         
@@ -99,10 +101,15 @@ jobs:
         # 创建打包暂存目录
         mkdir -p dist/pkg
         cp "build/$BINARY_NAME" dist/pkg/
+
         cp configs.example.json dist/pkg/
+        cp active_model.example.json dist/pkg/
+        cp default_status.example.json dist/pkg/
         cp location.example.json dist/pkg/
         cp image_metadata.example.json dist/pkg/
+
         cp -r prompt dist/pkg/
+        cp -r meta_image dist/pkg/
         
         cd dist/pkg
         if [[ "$OS_NAME" == *"windows"* ]]; then
