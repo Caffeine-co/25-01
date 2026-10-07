@@ -21,7 +21,7 @@ async def init_session_info_db() -> None:
                 CREATE TABLE IF NOT EXISTS session_cache (
                     type TEXT NOT NULL,
                     id INTEGER NOT NULL,
-                    PRIMARY KEY (session_type, session_id)
+                    PRIMARY KEY (type, id)
                 )
                 """
             )
