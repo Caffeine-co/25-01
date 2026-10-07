@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from src.plugins.living.config import chat_cfg, default_status
-from src.plugins.living.utils import read_json_async, write_json
+from src.plugins.living.utils import read_json_async, write_json, session_allowed
 from typing import Annotated, Literal, Self
 
 
@@ -19,7 +19,8 @@ class Session(SchemaModel):
     @model_validator(mode="after")
     def validate_session(self) -> Self:
         run_mode = chat_cfg["run_mode"]
-        if {"type": self.type, "id": self.id} not in chat_cfg[f"{run_mode}s"]:
+        # if {"type": self.type, "id": self.id} not in chat_cfg[f"{run_mode}s"]:
+        if not session_allowed({"type": self.type, "id": self.id}):
             raise ValueError(f"session {self.type}:{self.id} 不在允许名单中")
         return self
 

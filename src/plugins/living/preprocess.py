@@ -1,7 +1,9 @@
 import json
 import time
+
+from src.plugins.living import session_allowed
 from src.plugins.living.config import setting_cfg, chat_cfg
-from src.plugins.living.database import get_group_info, get_group_msg_list, get_latest_group_msg, get_group_impression, get_friend_info, get_latest_friend_msg, get_friend_msg_list, get_user_portrait, get_user_impression, get_user_memory, get_user_all_memory, get_session_activity
+from src.plugins.living.database import get_group_info, get_group_msg_list, get_latest_group_msg, get_group_impression, get_friend_info, get_latest_friend_msg, get_friend_msg_list, get_user_portrait, get_user_impression, get_user_memory, get_user_all_memory, get_session_activity, get_session_cache
 from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, temp_image_to_base64, level_text, read_json_async, format_content_item
 from src.plugins.living.validate import CharacterStatus
 
@@ -147,9 +149,13 @@ async def init_content_status(status: CharacterStatus) -> str:
     return "\n".join(content)
 
 async def init_content_preview() -> str:
-    run_mode = chat_cfg["run_mode"]
+    # run_mode = chat_cfg["run_mode"]
+    session_cache = await get_session_cache()
     presort_sessions = []
-    for session in chat_cfg[f"{run_mode}s"]:
+    # for session in chat_cfg[f"{run_mode}s"]:
+    for session in session_cache:
+        if not session_allowed(session):
+            continue
         activity = await get_session_activity(session)
         if session["type"] == "group":
             latest_msg = await get_latest_group_msg(session["id"])

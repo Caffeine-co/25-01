@@ -5,41 +5,59 @@ from src.plugins.living.config import chat_cfg
 from src.plugins.living.utils import delete_temp_image
 
 
+_session_db_write_lock = asyncio.Lock()
+
+def _connect_session_db() -> aiosqlite.Connection:
+    return aiosqlite.connect(
+        chat_cfg["session_info_db_path"],
+        timeout=30.0
+    )
+
 async def init_session_info_db() -> None:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
-        await db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS group_info (
-                group_id INTEGER PRIMARY KEY,
-                group_name TEXT,
-                member_count INTEGER
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS session_cache (
+                    type TEXT NOT NULL,
+                    id INTEGER NOT NULL,
+                    PRIMARY KEY (session_type, session_id)
+                )
+                """
             )
-            """
-        )
-        await db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS friend_info (
-                user_id INTEGER PRIMARY KEY,
-                nickname TEXT
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS group_info (
+                    group_id INTEGER PRIMARY KEY,
+                    group_name TEXT,
+                    member_count INTEGER
+                )
+                """
             )
-            """
-        )
-        await db.execute(
-            """
-            CREATE TABLE IF NOT EXISTS session_activity (
-                session_type TEXT NOT NULL,
-                session_id INTEGER NOT NULL,
-                has_at_me INTEGER DEFAULT 0,
-                last_open_time INTEGER DEFAULT 0,
-                last_chat_time INTEGER DEFAULT 0,
-                PRIMARY KEY (session_type, session_id)
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS friend_info (
+                    user_id INTEGER PRIMARY KEY,
+                    nickname TEXT
+                )
+                """
             )
-            """
-        )
-        await db.commit()
+            await db.execute(
+                """
+                CREATE TABLE IF NOT EXISTS session_activity (
+                    session_type TEXT NOT NULL,
+                    session_id INTEGER NOT NULL,
+                    has_at_me INTEGER DEFAULT 0,
+                    last_open_time INTEGER DEFAULT 0,
+                    last_chat_time INTEGER DEFAULT 0,
+                    PRIMARY KEY (session_type, session_id)
+                )
+                """
+            )
+            await db.commit()
 
 async def get_group_info(group_id: int) -> dict:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
+    async with _connect_session_db() as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             """
@@ -55,7 +73,7 @@ async def get_group_info(group_id: int) -> dict:
         return dict(row) if row else {}
 
 async def get_friend_info(user_id: int) -> dict:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
+    async with _connect_session_db() as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             """
@@ -69,7 +87,7 @@ async def get_friend_info(user_id: int) -> dict:
         return dict(row) if row else {}
 
 async def get_session_activity(session: dict) -> dict:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
+    async with _connect_session_db() as db:
         db.row_factory = aiosqlite.Row
         cursor = await db.execute(
             """
@@ -89,113 +107,159 @@ async def get_session_activity(session: dict) -> dict:
         row = await cursor.fetchone()
         return dict(row) if row else {}
 
-async def update_group_info(group_id: int, group_name: str, member_count: int) -> None:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
-        await db.execute(
+async def get_session_cache() -> list[dict]:
+    async with _connect_session_db() as db:
+        db.row_factory = aiosqlite.Row
+        cursor = await db.execute(
             """
-            INSERT INTO group_info (
-                group_id,
-                group_name,
-                member_count
-            )
-            VALUES (?, ?, ?)
-            ON CONFLICT(group_id)
-            DO UPDATE SET
-                group_name = excluded.group_name,
-                member_count = excluded.member_count
-            """,
-            (
-                group_id,
-                group_name,
-                member_count
-            )
+            SELECT type, id
+            FROM session_cache
+            ORDER BY type, id
+            """
         )
-        await db.commit()
+        rows = await cursor.fetchall()
+        return [{"type": row["type"], "id": row["id"]} for row in rows]
+
+async def cache_session(session: dict) -> None:
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                INSERT INTO session_cache (type, id)
+                VALUES (?, ?)
+                ON CONFLICT(type, id) DO NOTHING
+                """,
+                (session["type"], session["id"])
+            )
+            await db.commit()
+
+async def refresh_session_cache(session_list: list[dict]) -> None:
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute("DELETE FROM session_cache")
+            if session_list:
+                await db.executemany(
+                    """
+                    INSERT INTO session_cache (type, id)
+                    VALUES (?, ?)
+                    ON CONFLICT(type, id) DO NOTHING
+                    """,
+                    [(session["type"], session["id"]) for session in session_list]
+                )
+            await db.commit()
+
+async def update_group_info(group_id: int, group_name: str, member_count: int) -> None:
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                INSERT INTO group_info (
+                    group_id,
+                    group_name,
+                    member_count
+                )
+                VALUES (?, ?, ?)
+                ON CONFLICT(group_id)
+                DO UPDATE SET
+                    group_name = excluded.group_name,
+                    member_count = excluded.member_count
+                """,
+                (
+                    group_id,
+                    group_name,
+                    member_count
+                )
+            )
+            await db.commit()
 
 async def update_friend_info(user_id: int, nickname: str) -> None:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
-        await db.execute(
-            """
-            INSERT INTO friend_info (
-                user_id,
-                nickname
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                INSERT INTO friend_info (
+                    user_id,
+                    nickname
+                )
+                VALUES (?, ?)
+                ON CONFLICT(user_id)
+                DO UPDATE SET nickname = excluded.nickname
+                """,
+                (
+                    user_id,
+                    nickname
+                )
             )
-            VALUES (?, ?)
-            ON CONFLICT(user_id)
-            DO UPDATE SET nickname = excluded.nickname
-            """,
-            (
-                user_id,
-                nickname
-            )
-        )
-        await db.commit()
+            await db.commit()
 
 async def update_session_open_time(session: dict, last_open_time: int) -> None:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
-        await db.execute(
-            """
-            INSERT INTO session_activity (
-                session_type,
-                session_id,
-                last_open_time
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                INSERT INTO session_activity (
+                    session_type,
+                    session_id,
+                    last_open_time
+                )
+                VALUES (?, ?, ?)
+                ON CONFLICT(session_type, session_id)
+                DO UPDATE SET
+                    last_open_time = excluded.last_open_time
+                """,
+                (
+                    session["type"],
+                    session["id"],
+                    last_open_time
+                )
             )
-            VALUES (?, ?, ?)
-            ON CONFLICT(session_type, session_id)
-            DO UPDATE SET
-                last_open_time = excluded.last_open_time
-            """,
-            (
-                session["type"],
-                session["id"],
-                last_open_time
-            )
-        )
-        await db.commit()
+            await db.commit()
 
 async def update_session_chat_time(session: dict, last_chat_time: int) -> None:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
-        await db.execute(
-            """
-            INSERT INTO session_activity (
-                session_type,
-                session_id,
-                last_chat_time
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                INSERT INTO session_activity (
+                    session_type,
+                    session_id,
+                    last_chat_time
+                )
+                VALUES (?, ?, ?)
+                ON CONFLICT(session_type, session_id)
+                DO UPDATE SET
+                    last_chat_time = excluded.last_chat_time
+                """,
+                (
+                    session["type"],
+                    session["id"],
+                    last_chat_time
+                )
             )
-            VALUES (?, ?, ?)
-            ON CONFLICT(session_type, session_id)
-            DO UPDATE SET
-                last_chat_time = excluded.last_chat_time
-            """,
-            (
-                session["type"],
-                session["id"],
-                last_chat_time
-            )
-        )
-        await db.commit()
+            await db.commit()
 
 async def update_session_at_me(session: dict, has_at_me: bool) -> None:
-    async with aiosqlite.connect(chat_cfg["session_info_db_path"]) as db:
-        await db.execute(
-            """
-            INSERT INTO session_activity (
-                session_type,
-                session_id,
-                has_at_me
+    async with _session_db_write_lock:
+        async with _connect_session_db() as db:
+            await db.execute(
+                """
+                INSERT INTO session_activity (
+                    session_type,
+                    session_id,
+                    has_at_me
+                )
+                VALUES (?, ?, ?)
+                ON CONFLICT(session_type, session_id)
+                DO UPDATE SET
+                    has_at_me = excluded.has_at_me
+                """,
+                (
+                    session["type"],
+                    session["id"],
+                    int(has_at_me)
+                )
             )
-            VALUES (?, ?, ?)
-            ON CONFLICT(session_type, session_id)
-            DO UPDATE SET
-                has_at_me = excluded.has_at_me
-            """,
-            (
-                session["type"],
-                session["id"],
-                int(has_at_me)
-            )
-        )
-        await db.commit()
+            await db.commit()
 
 
 _msg_db_write_lock = asyncio.Lock()

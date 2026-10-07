@@ -16,11 +16,11 @@ from nonebot.plugin.on import on_message
 from src.plugins.living.afterprocess import handle_and_send_msg, update_friend_impression_in_chat
 from src.plugins.living.client import pre_chat_request, chatting_request, status_request, memory_request
 from src.plugins.living.config import chat_cfg, scheduler_cfg
-from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory, update_session_open_time, update_session_at_me, init_message_db
+from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory, update_session_open_time, update_session_at_me, init_message_db, refresh_session_cache, cache_session
 from src.plugins.living.preprocess import get_pre_chat_input, get_chatting_input, get_status_update_input, get_memory_archive_input
 from src.plugins.living.probability import active_probability
 from src.plugins.living.scheduling import SharedLimitAsyncIOExecutor, SharedLimitSkipFilter
-from src.plugins.living.utils import check_null_msg, format_received_msg, download_image_to_temp, check_at_me
+from src.plugins.living.utils import check_null_msg, format_received_msg, download_image_to_temp, check_at_me, session_allowed
 from src.plugins.living.validate import CharacterStatus
 from typing import Any, ParamSpec, TypeVar
 from uuid import uuid5, NAMESPACE_OID
@@ -200,6 +200,7 @@ async def memory_archive() -> None:
 
 async def session_update() -> None:
     logger.info(f"Start updating session info...")
+    """
     run_mode = chat_cfg["run_mode"]
     group_list = []
     friend_list = []
@@ -209,15 +210,24 @@ async def session_update() -> None:
                 group_list.append(session["id"])
             case _:
                 friend_list.append(session["id"])
+    """
     bot = get_bot()
+    session_cache = []
     raw_group_list = await bot.get_group_list(no_cache=True)
     raw_friend_list = await bot.get_friend_list(no_cache=True)
     for rg in raw_group_list:
-        if rg["group_id"] in group_list:
+        # if rg["group_id"] in group_list:
+        session = {"type": "group", "id": rg["group_id"]}
+        if session_allowed(session):
             await update_group_info(rg["group_id"], rg["group_name"], rg["member_count"])
+            session_cache.append(session)
     for rf in raw_friend_list:
-        if rf["user_id"] in friend_list:
+        # if rf["user_id"] in friend_list:
+        session = {"type": "friend", "id": rf["user_id"]}
+        if session_allowed(session):
             await update_friend_info(rf["user_id"], rf["nickname"])
+            session_cache.append(session)
+    await refresh_session_cache(session_cache)
     logger.success(f"Session info update complete")
 
 @priority_scheduled_job(
@@ -259,11 +269,13 @@ async def _() -> None:
     await session_update()
 
 async def check_group(event: GroupMessageEvent) -> bool:
-    run_mode = chat_cfg["run_mode"]
-    return {"type": "group", "id": event.group_id} in chat_cfg[f"{run_mode}s"]
+    # run_mode = chat_cfg["run_mode"]
+    # return {"type": "group", "id": event.group_id} in chat_cfg[f"{run_mode}s"]
+    return session_allowed({"type": "group", "id": event.group_id})
 async def check_private(event: PrivateMessageEvent) -> bool:
-    run_mode = chat_cfg["run_mode"]
-    return {"type": "friend", "id": event.user_id} in chat_cfg[f"{run_mode}s"]
+    # run_mode = chat_cfg["run_mode"]
+    # return {"type": "friend", "id": event.user_id} in chat_cfg[f"{run_mode}s"]
+    return session_allowed({"type": "friend", "id": event.user_id})
 
 group_msg = on_message(rule=check_group)
 private_msg = on_message(rule=check_private)
@@ -288,6 +300,7 @@ async def _record(event: GroupMessageEvent | PrivateMessageEvent):
     img_data = json.dumps(image_names, ensure_ascii=False)
     match event.message_type:
         case "group":
+            await cache_session({"type": "group", "id": event.group_id})
             await record_received_group_msg(event.group_id, {
                 "time": event.time,
                 "message_id": event.message_id,
@@ -302,6 +315,7 @@ async def _record(event: GroupMessageEvent | PrivateMessageEvent):
                     True
                 )
         case "private":
+            await cache_session({"type": "friend", "id": event.user_id})
             await record_received_friend_msg(event.user_id, {
                 "time": event.time,
                 "message_id": event.message_id,

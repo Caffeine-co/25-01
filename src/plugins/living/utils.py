@@ -58,6 +58,16 @@ def add_space_after_at(msg: Message) -> Message:
             msg.insert(i + 1, MessageSegment.text(" "))
     return msg
 
+def session_allowed(session: dict) -> bool:
+    run_mode = chat_cfg["run_mode"]
+    match run_mode:
+        case "whitelist":
+            return session in chat_cfg["whitelists"]
+        case "blacklist":
+            return session not in chat_cfg["blacklists"]
+        case _:
+            raise ValueError(f"Unsupported run mode: {run_mode}")
+
 def check_null_msg(msg: Message) -> bool:
     null_text_num = sum(1 for seg in msg if seg.type == "text" and seg.data["text"] == "")
     seg_length = len(msg)
