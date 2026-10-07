@@ -239,6 +239,5 @@ __marimo__/
 /*.db-shm
 
 # Runtime directories
-/data/
 /temp_image/
 /logs/
