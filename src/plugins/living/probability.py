@@ -34,18 +34,34 @@ def sigmoid(value: float) -> float:
     exp_value = math.exp(value)
     return exp_value / (1.0 + exp_value)
 
+def smooth_time_window_weight(current_hour: float, start_hour: float, end_hour: float, steepness: float) -> float:
+    if steepness <= 0:
+        raise ValueError("edge_steepness 必须大于 0")
+    duration = (end_hour - start_hour) % 24.0
+    if duration == 0:
+        return 1.0
+    unwrapped_end = start_hour + duration
+    def window_weight(hour: float) -> float:
+        enter_transition = sigmoid(steepness * (hour - start_hour))
+        leave_transition = sigmoid(steepness * (unwrapped_end - hour))
+        return enter_transition * leave_transition
+    return max(
+        window_weight(current_hour - 24.0),
+        window_weight(current_hour),
+        window_weight(current_hour + 24.0)
+    )
+
 def awake_weight(current_hour: float) -> float:
     wake_hour = active_model["wake_hour"]
     sleep_hour = active_model["sleep_hour"]
     steepness = active_model["awake_edge_steepness"]
     sleep_floor = active_model["sleep_floor"]
-    hours_after_wake = (current_hour - wake_hour) % 24.0
-    awake_duration = (sleep_hour - wake_hour) % 24.0
-    if awake_duration == 0:
-        awake_duration = 24.0
-    wake_transition = sigmoid(steepness * hours_after_wake)
-    sleep_transition = sigmoid(steepness * (awake_duration - hours_after_wake))
-    raw_awake_weight = wake_transition * sleep_transition
+    raw_awake_weight = smooth_time_window_weight(
+        current_hour=current_hour,
+        start_hour=wake_hour,
+        end_hour=sleep_hour,
+        steepness=steepness
+    )
     return sleep_floor + (1.0 - sleep_floor) * raw_awake_weight
 
 # def calculate_peak_rate(current_hour: float) -> float:
@@ -62,17 +78,6 @@ def calculate_peak_rate(current_hour: float, weekday: str) -> float:
         )
         total_peak_rate += peak["rate_per_hour"] * peak_weight
     return total_peak_rate
-
-def smooth_time_window_weight(current_hour: float, start_hour: float, end_hour: float, steepness: float) -> float:
-    if steepness <= 0:
-        raise ValueError("edge_steepness 必须大于 0")
-    elapsed = (current_hour - start_hour) % 24.0
-    duration = (end_hour - start_hour) % 24.0
-    if duration == 0:
-        return 1.0
-    enter_transition = sigmoid(steepness * elapsed)
-    leave_transition = sigmoid(steepness * (duration - elapsed))
-    return enter_transition * leave_transition
 
 def calculate_availability_multiplier(current_hour: float, weekday: str) -> float:
     multiplier = 1.0
