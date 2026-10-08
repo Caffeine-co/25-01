@@ -1,5 +1,5 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from src.plugins.living.config import chat_cfg, status_snapshot_debug, default_status
+from src.plugins.living.config import chat_cfg, debug_status_snapshot, default_status
 from src.plugins.living.database import take_status_snapshot
 from src.plugins.living.utils import read_json_async, write_json, session_allowed
 from typing import Annotated, Literal, Self
@@ -240,7 +240,7 @@ class CharacterStatus(SchemaModel):
         for key in updates:
             setattr(self, key, getattr(validated, key))
         await self._save()
-        if status_snapshot_debug["enable"]:
+        if debug_status_snapshot["enable"]:
             await take_status_snapshot(self.model_dump_json())
 
 STATUS_CHANGE_FIELDS = tuple(
