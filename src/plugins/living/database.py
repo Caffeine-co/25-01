@@ -814,20 +814,21 @@ async def init_status_snapshot() -> None:
             """
             CREATE TABLE IF NOT EXISTS snapshot (
                 id INTEGER PRIMARY KEY,
-                status TEXT
+                status TEXT NOT NULL,
+                changes TEXT NOT NULL
             )
             """
         )
         await db.commit()
 
-async def take_status_snapshot(status_content: str) -> None:
+async def take_status_snapshot(status: str, changes: str) -> None:
     async with aiosqlite.connect(debug_status_snapshot["db_path"]) as db:
         await db.execute(
             """
-            INSERT INTO snapshot (status)
-            VALUES (?)
+            INSERT INTO snapshot (status, changes)
+            VALUES (?, ?)
             """,
-            (status_content,)
+            (status, changes)
         )
         await db.execute(
             """

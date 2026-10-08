@@ -1,3 +1,5 @@
+import json
+from nonebot.log import logger
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from src.plugins.living.config import chat_cfg, debug_status_snapshot, default_status
 from src.plugins.living.database import take_status_snapshot
@@ -241,7 +243,14 @@ class CharacterStatus(SchemaModel):
             setattr(self, key, getattr(validated, key))
         await self._save()
         if debug_status_snapshot["enable"]:
-            await take_status_snapshot(self.model_dump_json())
+            # await take_status_snapshot(self.model_dump_json())
+            try:
+                await take_status_snapshot(
+                    self.model_dump_json(),
+                    json.dumps(content["changes"], ensure_ascii=False)
+                )
+            except Exception:
+                logger.exception("Failed to take status snapshot")
 
 STATUS_CHANGE_FIELDS = tuple(
     field_name

@@ -105,9 +105,9 @@ async def _() -> None:
         # start_scheduler(),
         init_message_db()
     )
-    await start_scheduler()
     if debug_status_snapshot["enable"]:
         await init_status_snapshot()
+    await start_scheduler()
 
 @driver.on_shutdown
 async def _() -> None:
