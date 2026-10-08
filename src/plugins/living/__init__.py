@@ -15,8 +15,8 @@ from nonebot.log import LoguruHandler, logger
 from nonebot.plugin.on import on_message
 from src.plugins.living.afterprocess import handle_and_send_msg, update_friend_impression_in_chat
 from src.plugins.living.client import pre_chat_request, chatting_request, status_request, memory_request
-from src.plugins.living.config import chat_cfg, scheduler_cfg
-from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory, update_session_open_time, update_session_at_me, init_message_db, refresh_session_cache, cache_session, get_session_cache
+from src.plugins.living.config import chat_cfg, scheduler_cfg, status_snapshot_debug
+from src.plugins.living.database import init_memory_db, init_session_info_db, update_msg_read_status, update_group_impression, update_group_info, update_friend_info, record_received_group_msg, record_received_friend_msg, update_user_all_memory, get_user_list_in_memory, update_session_open_time, update_session_at_me, init_message_db, refresh_session_cache, cache_session, get_session_cache, init_status_snapshot
 from src.plugins.living.preprocess import get_pre_chat_input, get_chatting_input, get_status_update_input, get_memory_archive_input
 from src.plugins.living.probability import active_probability
 from src.plugins.living.scheduling import SharedLimitAsyncIOExecutor, SharedLimitSkipFilter
@@ -106,6 +106,8 @@ async def _() -> None:
         init_message_db()
     )
     await start_scheduler()
+    if status_snapshot_debug["enable"]:
+        await init_status_snapshot()
 
 @driver.on_shutdown
 async def _() -> None:

@@ -1,7 +1,7 @@
 import aiosqlite
 import asyncio
 import json
-from src.plugins.living.config import chat_cfg
+from src.plugins.living.config import chat_cfg, status_snapshot_debug
 from src.plugins.living.utils import delete_temp_image
 
 
@@ -804,5 +804,41 @@ async def update_user_all_memory(user_id: int, new_portrait: str, new_memory: li
                 json.dumps([], ensure_ascii=False),
                 user_id
             )
+        )
+        await db.commit()
+
+
+async def init_status_snapshot() -> None:
+    async with aiosqlite.connect(status_snapshot_debug["db_path"]) as db:
+        await db.execute(
+            """
+            CREATE TABLE IF NOT EXISTS snapshot (
+                id INTEGER PRIMARY KEY,
+                status TEXT
+            )
+            """
+        )
+        await db.commit()
+
+async def take_status_snapshot(status_content: str) -> None:
+    async with aiosqlite.connect(status_snapshot_debug["db_path"]) as db:
+        await db.execute(
+            """
+            INSERT INTO snapshot (status)
+            VALUES (?)
+            """,
+            (status_content,)
+        )
+        await db.execute(
+            """
+            DELETE FROM snapshot
+            WHERE id NOT IN (
+                SELECT id
+                FROM snapshot
+                ORDER BY id DESC
+                LIMIT ?
+            )
+            """,
+            (status_snapshot_debug["snapshot_max_rows"],)
         )
         await db.commit()

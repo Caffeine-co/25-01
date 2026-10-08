@@ -74,5 +74,12 @@
       "hour": "8",
       "minute": "30"
     }
+  },
+  "debug_config": {
+    "status_snapshot": {
+      "enable": false,
+      "db_path": "status_snapshot.db",
+      "snapshot_max_rows": 25
+    }
   }
 }
