@@ -17,7 +17,7 @@
     "interface_type": "openai.responses"
   },
   "setting_config": {
-    "prompt": {
+    "prompt_path": {
       "preset": "prompt/preset.md",
       "common": {
         "core": "prompt/common/core.md",

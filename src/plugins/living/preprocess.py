@@ -6,7 +6,7 @@ from src.plugins.living.utils import read_txt_async, ts_to_time, cap_weekday, te
 from src.plugins.living.validate import CharacterStatus
 
 
-prompt = setting_cfg["prompt"]
+prompt_path = setting_cfg["prompt_path"]
 
 async def init_content_location() -> str:
     location_list = await read_json_async(chat_cfg["location_path"])
@@ -511,10 +511,10 @@ async def init_content_memory(user_list: list[int]) -> str:
     return "\n".join(content)
 
 async def get_pre_chat_input(status: CharacterStatus) -> list:
-    system_content_core = await read_txt_async(prompt["common"]["core"])
-    system_content_preset = await read_txt_async(prompt["preset"])
-    system_content_state = await read_txt_async(prompt["common"]["state"])
-    system_content_pre_chat = await read_txt_async(prompt["task"]["pre_chat"])
+    system_content_core = await read_txt_async(prompt_path["common"]["core"])
+    system_content_preset = await read_txt_async(prompt_path["preset"])
+    system_content_state = await read_txt_async(prompt_path["common"]["state"])
+    system_content_pre_chat = await read_txt_async(prompt_path["task"]["pre_chat"])
     current_time = ts_to_time(int(time.time()))
     user_content_time = "\n".join([
         "# 目标时间",
@@ -548,14 +548,14 @@ async def get_pre_chat_input(status: CharacterStatus) -> list:
     ]
 
 async def get_chatting_input(status: CharacterStatus, session: dict) -> tuple[list, list]:
-    system_content_core = await read_txt_async(prompt["common"]["core"])
-    system_content_preset = await read_txt_async(prompt["preset"])
-    system_content_state = await read_txt_async(prompt["common"]["state"])
-    system_content_chat = await read_txt_async(prompt["common"]["chat"])
+    system_content_core = await read_txt_async(prompt_path["common"]["core"])
+    system_content_preset = await read_txt_async(prompt_path["preset"])
+    system_content_state = await read_txt_async(prompt_path["common"]["state"])
+    system_content_chat = await read_txt_async(prompt_path["common"]["chat"])
     if session["type"] == "group":
-        task_chat = prompt["task"]["group_chat"]
+        task_chat = prompt_path["task"]["group_chat"]
     else:
-        task_chat = prompt["task"]["friend_chat"]
+        task_chat = prompt_path["task"]["friend_chat"]
     system_content_task_chat = await read_txt_async(task_chat)
     current_time = ts_to_time(int(time.time()))
     user_content_time = "\n".join([
@@ -596,10 +596,10 @@ async def get_chatting_input(status: CharacterStatus, session: dict) -> tuple[li
     ], unread_msg_id_list
 
 async def get_status_update_input(status: CharacterStatus) -> list:
-    system_content_core = await read_txt_async(prompt["common"]["core"])
-    system_content_preset = await read_txt_async(prompt["preset"])
-    system_content_state = await read_txt_async(prompt["common"]["state"])
-    system_content_status_update = await read_txt_async(prompt["task"]["status_update"])
+    system_content_core = await read_txt_async(prompt_path["common"]["core"])
+    system_content_preset = await read_txt_async(prompt_path["preset"])
+    system_content_state = await read_txt_async(prompt_path["common"]["state"])
+    system_content_status_update = await read_txt_async(prompt_path["task"]["status_update"])
     current_time = ts_to_time(int(time.time()))
     user_content_time = "\n".join([
         "# 目标时间",
@@ -629,9 +629,9 @@ async def get_status_update_input(status: CharacterStatus) -> list:
     ]
 
 async def get_memory_archive_input(user_list: list[int]) -> list:
-    system_content_core = await read_txt_async(prompt["common"]["core"])
-    system_content_preset = await read_txt_async(prompt["preset"])
-    system_content_memory = await read_txt_async(prompt["task"]["memory_archive"])
+    system_content_core = await read_txt_async(prompt_path["common"]["core"])
+    system_content_preset = await read_txt_async(prompt_path["preset"])
+    system_content_memory = await read_txt_async(prompt_path["task"]["memory_archive"])
     user_content_time = f"# 归档时间\n- {ts_to_time(int(time.time())).isoformat()}"
     user_content_memory_list = await init_content_memory(user_list)
     return [
