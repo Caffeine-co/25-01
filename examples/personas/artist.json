@@ -1,0 +1,11 @@
+{
+  "id": "creative_humanlike",
+  "move_multiplier": 1.0,
+  "drives": {
+    "thirst":         {"initial": 32, "rise_per_hour": 4.5, "threshold": 40, "priority": 4.0},
+    "hunger":         {"initial": 22, "rise_per_hour": 2.6, "threshold": 45, "priority": 3.0},
+    "sleep_pressure": {"initial": 35, "rise_per_hour": 2.2, "threshold": 59, "priority": 3.0},
+    "fatigue":        {"initial": 21, "rise_per_hour": 1.1, "threshold": 60, "priority": 2.0},
+    "creative_urge":  {"initial": 40, "rise_per_hour": 1.8, "threshold": 44, "priority": 1.3}
+  }
+}

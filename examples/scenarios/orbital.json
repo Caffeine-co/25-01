@@ -1,0 +1,11 @@
+{
+  "world": "../worlds/orbital.json",
+  "actors": [
+    {
+      "id": "unit_07",
+      "persona": "../personas/synthetic_researcher.json",
+      "start_location": "maintenance_bay",
+      "known_locations": ["maintenance_bay", "junction", "cooling_module", "archive"]
+    }
+  ]
+}

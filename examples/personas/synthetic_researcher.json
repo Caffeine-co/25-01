@@ -1,0 +1,9 @@
+{
+  "id": "synthetic_researcher",
+  "move_multiplier": 0.8,
+  "drives": {
+    "power_deficit": {"initial": 20, "rise_per_hour": 2.5, "threshold": 45, "priority": 3.4},
+    "thermal_load": {"initial": 30, "rise_per_hour": 3.5, "threshold": 42, "priority": 3.1},
+    "information_need": {"initial": 48, "rise_per_hour": 1.7, "threshold": 50, "priority": 1.6}
+  }
+}

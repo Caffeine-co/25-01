@@ -1,0 +1,26 @@
+{
+  "id": "orbital_research_module",
+  "locations": {
+    "maintenance_bay": {"junction": 4},
+    "junction": {"maintenance_bay": 4, "cooling_module": 7, "archive": 5},
+    "cooling_module": {"junction": 7},
+    "archive": {"junction": 5}
+  },
+  "resources": {
+    "electricity": {"amount": 70, "capacity": 100},
+    "coolant": {"amount": 35, "capacity": 60}
+  },
+  "facilities": [
+    {"id": "charging_port", "location": "maintenance_bay", "duration_minutes": 90,
+      "resource": "electricity", "units": 8, "effects": {"power_deficit": -65}},
+    {"id": "cooling_station", "location": "cooling_module", "duration_minutes": 15,
+      "resource": "coolant", "units": 2, "effects": {"thermal_load": -64}},
+    {"id": "knowledge_terminal", "location": "archive", "duration_minutes": 100,
+      "effects": {"information_need": -60, "thermal_load": 8}}
+  ],
+  "events": [
+    {"minute": 900, "type": "resource_add", "resource": "electricity", "amount": 20},
+    {"minute": 1900, "type": "resource_add", "resource": "coolant", "amount": 8},
+    {"minute": 2800, "type": "resource_add", "resource": "electricity", "amount": 25}
+  ]
+}

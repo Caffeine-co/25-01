@@ -1,0 +1,11 @@
+{
+  "world": "../worlds/apartment.json",
+  "actors": [
+    {
+      "id": "resident_01",
+      "persona": "../personas/artist.json",
+      "start_location": "bedroom",
+      "known_locations": ["bedroom", "hall", "kitchen", "studio"]
+    }
+  ]
+}
