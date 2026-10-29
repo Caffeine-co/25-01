@@ -1,0 +1,38 @@
+PS C:\...> python -m simlife examples/scenarios/apartment.json --hours 72 --db data/apartment.db
+World: ordinary_apartment | 0 -> 4320 minutes
+Resources: {"water": 14.0, "food": 10.0}
+Life: resident_01 @ kitchen
+Drives: {"thirst": 26.48, "hunger": 18.07, "sleep_pressure": 61.4, "fatigue": 37.23, "creative_urge": 43.6}
+Busy: None
+Last 12 events:
+  t= 3089 | action_started         | resident_01  | {"action": "use", "target": "desk", "score": 0.0095}
+  t= 3179 | action_completed       | resident_01  | {"facility": "desk", "effects": {"creative_urge": -42.0, "fatigue": 9.0}}
+  t= 3419 | action_started         | resident_01  | {"action": "move", "target": "hall", "goal": "tap", "score": 0.0202}
+  t= 3421 | actor_moved            | resident_01  | {"location": "hall"}
+  t= 3421 | action_started         | resident_01  | {"action": "move", "target": "kitchen", "goal": "tap", "score": 0.0252}
+  t= 3424 | actor_moved            | resident_01  | {"location": "kitchen"}
+  t= 3424 | action_started         | resident_01  | {"action": "use", "target": "tap", "score": 0.0328}
+  t= 3428 | action_completed       | resident_01  | {"facility": "tap", "effects": {"thirst": -41.55}}
+  t= 3878 | action_started         | resident_01  | {"action": "use", "target": "meal", "score": 0.0223}
+  t= 3903 | action_completed       | resident_01  | {"facility": "meal", "effects": {"hunger": -47.36333333}}
+  t= 3963 | action_started         | resident_01  | {"action": "use", "target": "tap", "score": 0.0017}
+  t= 3967 | action_completed       | resident_01  | {"facility": "tap", "effects": {"thirst": -40.425}}
+PS C:\...> python -m simlife examples/scenarios/orbital.json --hours 72 --db data/orbital.db
+World: orbital_research_module | 0 -> 4320 minutes
+Resources: {"electricity": 91.0, "coolant": 31.0}
+Life: unit_07 @ archive
+Drives: {"power_deficit": 47.25, "thermal_load": 28.07, "information_need": 2.38}
+Busy: None
+Last 12 events:
+  t= 3190 | action_started         | unit_07      | {"action": "move", "target": "cooling_module", "goal": "cooling_station", "score": 0.0104}
+  t= 3196 | actor_moved            | unit_07      | {"location": "cooling_module"}
+  t= 3196 | action_started         | unit_07      | {"action": "use", "target": "cooling_station", "score": 0.0209}
+  t= 3211 | action_completed       | unit_07      | {"facility": "cooling_station", "effects": {"thermal_load": -44.04166667}}
+  t= 3961 | action_started         | unit_07      | {"action": "use", "target": "cooling_station", "score": 0.0349}
+  t= 3976 | action_completed       | unit_07      | {"facility": "cooling_station", "effects": {"thermal_load": -44.625}}
+  t= 4126 | action_started         | unit_07      | {"action": "move", "target": "junction", "goal": "knowledge_terminal", "score": 0.0093}
+  t= 4132 | actor_moved            | unit_07      | {"location": "junction"}
+  t= 4132 | action_started         | unit_07      | {"action": "move", "target": "archive", "goal": "knowledge_terminal", "score": 0.0146}
+  t= 4136 | actor_moved            | unit_07      | {"location": "archive"}
+  t= 4136 | action_started         | unit_07      | {"action": "use", "target": "knowledge_terminal", "score": 0.0183}
+  t= 4236 | action_completed       | unit_07      | {"facility": "knowledge_terminal", "effects": {"information_need": -56.24166667, "thermal_load": 8.0}}

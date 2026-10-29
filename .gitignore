@@ -1,8 +1,8 @@
 # Runtime data
-/data/
-*.db
-*.db-wal
-*.db-shm
+#/data/
+#*.db
+#*.db-wal
+#*.db-shm
 
 # Python cache/build
 __pycache__/
