@@ -19,11 +19,11 @@
   "resources": {
     "water": {
       "amount": 18,
-      "capacity": 24
+      "capacity": 40
     },
     "food": {
       "amount": 10,
-      "capacity": 16
+      "capacity": 30
     }
   },
   "facilities": [
@@ -32,8 +32,8 @@
       "location": "bedroom",
       "duration_minutes": 240,
       "effects": {
-        "sleep_pressure": -66,
-        "fatigue": -52
+        "sleep_pressure": -68,
+        "fatigue": -55
       },
       "restorative": true
     },
@@ -44,7 +44,7 @@
       "resource": "water",
       "units": 1,
       "effects": {
-        "thirst": -60
+        "thirst": -62
       }
     },
     {
@@ -54,17 +54,33 @@
       "resource": "food",
       "units": 1,
       "effects": {
-        "hunger": -64
+        "hunger": -66
       }
     },
     {
-      "id": "desk",
+      "id": "practice_drawing",
       "location": "studio",
       "duration_minutes": 90,
       "effects": {
-        "creative_urge": -42,
-        "fatigue": 9
-      }
+        "creative_urge": -38,
+        "fatigue": 5
+      },
+      "tags": [
+        "practice",
+        "skill:drawing"
+      ]
+    },
+    {
+      "id": "practice_reading",
+      "location": "studio",
+      "duration_minutes": 60,
+      "effects": {
+        "fatigue": 2
+      },
+      "tags": [
+        "practice",
+        "skill:reading"
+      ]
     }
   ],
   "events": [
@@ -72,14 +88,14 @@
       "minute": 1440,
       "type": "resource_add",
       "resource": "water",
-      "amount": 9,
+      "amount": 12,
       "repeat_every_minutes": 1440
     },
     {
       "minute": 1440,
       "type": "resource_add",
       "resource": "food",
-      "amount": 4,
+      "amount": 8,
       "repeat_every_minutes": 1440
     }
   ]

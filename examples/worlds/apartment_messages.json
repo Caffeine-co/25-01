@@ -1,0 +1,110 @@
+{
+  "id": "messages_apartment",
+  "locations": {
+    "bedroom": {
+      "hall": 2
+    },
+    "hall": {
+      "bedroom": 2,
+      "kitchen": 3,
+      "studio": 2
+    },
+    "kitchen": {
+      "hall": 3
+    },
+    "studio": {
+      "hall": 2
+    }
+  },
+  "resources": {
+    "water": {
+      "amount": 18,
+      "capacity": 40
+    },
+    "food": {
+      "amount": 10,
+      "capacity": 30
+    }
+  },
+  "facilities": [
+    {
+      "id": "bed",
+      "location": "bedroom",
+      "duration_minutes": 240,
+      "effects": {
+        "sleep_pressure": -68,
+        "fatigue": -55
+      },
+      "restorative": true
+    },
+    {
+      "id": "tap",
+      "location": "kitchen",
+      "duration_minutes": 4,
+      "resource": "water",
+      "units": 1,
+      "effects": {
+        "thirst": -62
+      }
+    },
+    {
+      "id": "meal",
+      "location": "kitchen",
+      "duration_minutes": 25,
+      "resource": "food",
+      "units": 1,
+      "effects": {
+        "hunger": -66
+      }
+    },
+    {
+      "id": "practice_drawing",
+      "location": "studio",
+      "duration_minutes": 90,
+      "effects": {
+        "creative_urge": -38,
+        "fatigue": 5
+      },
+      "tags": [
+        "practice",
+        "skill:drawing"
+      ]
+    },
+    {
+      "id": "practice_reading",
+      "location": "studio",
+      "duration_minutes": 60,
+      "effects": {
+        "fatigue": 2
+      },
+      "tags": [
+        "practice",
+        "skill:reading"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "minute": 1440,
+      "type": "resource_add",
+      "resource": "water",
+      "amount": 12,
+      "repeat_every_minutes": 1440
+    },
+    {
+      "minute": 1440,
+      "type": "resource_add",
+      "resource": "food",
+      "amount": 8,
+      "repeat_every_minutes": 1440
+    },
+    {
+      "minute": 600,
+      "type": "message",
+      "actor": "resident_01",
+      "from": "friend_01",
+      "text": "下午一起去散步吗？",
+      "urgent": true
+    }
+  ]
+}

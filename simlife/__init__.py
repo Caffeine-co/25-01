@@ -1,2 +1,2 @@
-"""WorldLife 可复现模拟核心。不依赖角色 IP、LLM 或聊天框架。"""
-__version__ = "0.5.0"
+"""WorldLife Next: 时间驱动、客观世界裁决的虚拟人物实验系统。"""
+__version__ = "1.0.0"

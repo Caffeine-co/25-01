@@ -1,0 +1,113 @@
+{
+  "apartment_sustainable": {
+    "hours": 720,
+    "counts": {
+      "action_completed": 174,
+      "action_started": 462,
+      "actor_moved": 288,
+      "commitment_completed": 1,
+      "goal_changed": 311,
+      "long_goal_completed": 1,
+      "practice_completed": 59,
+      "world_resource_added": 60
+    },
+    "actors": {
+      "resident_01": {
+        "skills": {
+          "drawing": 49.19968427
+        },
+        "min_vitality": 95.0
+      }
+    }
+  },
+  "apartment_scarce": {
+    "hours": 168,
+    "counts": {
+      "action_blocked": 1,
+      "action_completed": 9,
+      "action_failed": 7,
+      "action_started": 34,
+      "actor_moved": 18,
+      "goal_changed": 16,
+      "practice_completed": 3,
+      "world_facility_changed": 2
+    },
+    "actors": {
+      "resident_01": {
+        "skills": {
+          "drawing": 2.97506945
+        },
+        "min_vitality": 0
+      }
+    }
+  },
+  "apartment_interrupt": {
+    "hours": 72,
+    "counts": {
+      "action_blocked": 1,
+      "action_completed": 15,
+      "action_interrupted": 1,
+      "action_started": 42,
+      "actor_moved": 26,
+      "goal_changed": 29,
+      "practice_completed": 4,
+      "world_resource_added": 6,
+      "world_vitality_changed": 2
+    },
+    "actors": {
+      "resident_01": {
+        "skills": {
+          "drawing": 3.9502772
+        },
+        "min_vitality": 2.2166667
+      }
+    }
+  },
+  "apartment_messages": {
+    "hours": 72,
+    "counts": {
+      "action_completed": 17,
+      "action_started": 45,
+      "actor_moved": 28,
+      "goal_changed": 32,
+      "message_received": 1,
+      "practice_completed": 6,
+      "world_resource_added": 6
+    },
+    "actors": {
+      "resident_01": {
+        "skills": {
+          "drawing": 5.87638023
+        },
+        "min_vitality": 95.0
+      }
+    }
+  },
+  "roommates": {
+    "hours": 720,
+    "counts": {
+      "action_completed": 345,
+      "action_started": 928,
+      "actor_moved": 554,
+      "goal_changed": 634,
+      "long_goal_completed": 2,
+      "practice_completed": 118,
+      "social_interaction": 29,
+      "world_resource_added": 60
+    },
+    "actors": {
+      "resident_01": {
+        "skills": {
+          "drawing": 47.97898913
+        },
+        "min_vitality": 95.0
+      },
+      "resident_02": {
+        "skills": {
+          "reading": 48.5893367
+        },
+        "min_vitality": 95.0
+      }
+    }
+  }
+}

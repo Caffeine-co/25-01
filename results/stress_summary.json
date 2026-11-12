@@ -1,0 +1,755 @@
+{
+  "seeds": 30,
+  "days_per_seed": 7,
+  "all_passed": true,
+  "totals": {
+    "goal_changed": 1802,
+    "action_started": 2868,
+    "actor_moved": 1664,
+    "action_completed": 936,
+    "practice_completed": 293,
+    "commitment_completed": 13,
+    "world_resource_added": 420,
+    "world_facility_changed": 139,
+    "world_vitality_changed": 64,
+    "message_received": 67,
+    "social_interaction": 49,
+    "action_failed": 210,
+    "commitment_missed": 2,
+    "action_blocked": 26
+  },
+  "cases": [
+    {
+      "seed": 0,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 73,
+        "action_started": 111,
+        "actor_moved": 70,
+        "action_completed": 40,
+        "practice_completed": 14,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 4,
+        "world_vitality_changed": 2,
+        "message_received": 3
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 100
+    },
+    {
+      "seed": 1,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 102,
+        "action_started": 159,
+        "actor_moved": 92,
+        "action_completed": 54,
+        "world_vitality_changed": 5,
+        "practice_completed": 18,
+        "social_interaction": 4,
+        "world_resource_added": 14,
+        "message_received": 2,
+        "world_facility_changed": 2,
+        "action_failed": 8
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 22.84500667
+    },
+    {
+      "seed": 2,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 54,
+        "action_started": 81,
+        "actor_moved": 48,
+        "action_completed": 25,
+        "world_facility_changed": 7,
+        "practice_completed": 1,
+        "action_failed": 8,
+        "world_vitality_changed": 1,
+        "commitment_missed": 1,
+        "world_resource_added": 14,
+        "message_received": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 100
+    },
+    {
+      "seed": 3,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 43,
+        "action_started": 77,
+        "actor_moved": 42,
+        "action_completed": 20,
+        "practice_completed": 5,
+        "social_interaction": 1,
+        "world_facility_changed": 5,
+        "action_failed": 14,
+        "world_resource_added": 14,
+        "action_blocked": 2,
+        "message_received": 3,
+        "world_vitality_changed": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 4,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 69,
+        "action_started": 108,
+        "actor_moved": 66,
+        "action_completed": 39,
+        "world_facility_changed": 6,
+        "practice_completed": 13,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_vitality_changed": 2,
+        "action_failed": 2,
+        "message_received": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 100
+    },
+    {
+      "seed": 5,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 17,
+        "action_started": 34,
+        "actor_moved": 16,
+        "action_completed": 7,
+        "message_received": 4,
+        "practice_completed": 2,
+        "social_interaction": 1,
+        "world_facility_changed": 4,
+        "action_failed": 10,
+        "world_resource_added": 14,
+        "world_vitality_changed": 1,
+        "action_blocked": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 6,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 73,
+        "action_started": 111,
+        "actor_moved": 70,
+        "action_completed": 40,
+        "practice_completed": 14,
+        "world_vitality_changed": 4,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 3,
+        "message_received": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 100
+    },
+    {
+      "seed": 7,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 28,
+        "action_started": 51,
+        "actor_moved": 26,
+        "action_completed": 14,
+        "practice_completed": 5,
+        "social_interaction": 1,
+        "world_vitality_changed": 4,
+        "world_facility_changed": 2,
+        "action_failed": 10,
+        "message_received": 3,
+        "world_resource_added": 14,
+        "action_blocked": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 8,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 12,
+        "action_started": 25,
+        "actor_moved": 14,
+        "action_completed": 6,
+        "world_facility_changed": 6,
+        "message_received": 3,
+        "practice_completed": 2,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "action_failed": 5,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 9,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 42,
+        "action_started": 71,
+        "actor_moved": 38,
+        "action_completed": 19,
+        "practice_completed": 6,
+        "social_interaction": 2,
+        "world_resource_added": 14,
+        "world_facility_changed": 5,
+        "action_failed": 12,
+        "world_vitality_changed": 2,
+        "message_received": 2,
+        "action_blocked": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 10,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 15,
+        "action_started": 32,
+        "actor_moved": 18,
+        "action_completed": 8,
+        "message_received": 2,
+        "practice_completed": 3,
+        "commitment_completed": 1,
+        "world_facility_changed": 5,
+        "world_resource_added": 14,
+        "action_failed": 6,
+        "action_blocked": 1,
+        "world_vitality_changed": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 12.57166903
+    },
+    {
+      "seed": 11,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 122,
+        "action_started": 190,
+        "actor_moved": 110,
+        "action_completed": 61,
+        "world_vitality_changed": 2,
+        "message_received": 4,
+        "practice_completed": 16,
+        "social_interaction": 5,
+        "world_resource_added": 14,
+        "world_facility_changed": 3,
+        "action_failed": 14
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 76.71
+    },
+    {
+      "seed": 12,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "world_facility_changed": 5,
+        "goal_changed": 51,
+        "action_started": 83,
+        "actor_moved": 50,
+        "action_completed": 26,
+        "practice_completed": 8,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_vitality_changed": 3,
+        "message_received": 1,
+        "action_failed": 7
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 35.92833987
+    },
+    {
+      "seed": 13,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 62,
+        "action_started": 103,
+        "actor_moved": 56,
+        "action_completed": 33,
+        "message_received": 1,
+        "practice_completed": 11,
+        "social_interaction": 2,
+        "world_facility_changed": 7,
+        "world_resource_added": 14,
+        "action_failed": 12,
+        "action_blocked": 2,
+        "world_vitality_changed": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 14,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "world_vitality_changed": 1,
+        "goal_changed": 15,
+        "action_started": 31,
+        "actor_moved": 18,
+        "action_completed": 8,
+        "practice_completed": 3,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 7,
+        "action_failed": 5,
+        "action_blocked": 1,
+        "message_received": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 15,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 90,
+        "action_started": 143,
+        "actor_moved": 82,
+        "action_completed": 48,
+        "practice_completed": 17,
+        "social_interaction": 3,
+        "world_resource_added": 14,
+        "world_vitality_changed": 2,
+        "message_received": 4,
+        "world_facility_changed": 3,
+        "action_failed": 9,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 16,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 35,
+        "action_started": 57,
+        "actor_moved": 34,
+        "action_completed": 18,
+        "practice_completed": 6,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 5,
+        "world_vitality_changed": 2,
+        "message_received": 2,
+        "action_failed": 5,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 17,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 48,
+        "action_started": 82,
+        "actor_moved": 44,
+        "action_completed": 21,
+        "world_facility_changed": 5,
+        "practice_completed": 4,
+        "action_failed": 15,
+        "social_interaction": 2,
+        "world_resource_added": 14,
+        "message_received": 2,
+        "action_blocked": 2,
+        "world_vitality_changed": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 18,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 23,
+        "action_started": 41,
+        "actor_moved": 24,
+        "action_completed": 12,
+        "practice_completed": 4,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 7,
+        "world_vitality_changed": 1,
+        "action_failed": 5,
+        "message_received": 1,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 19,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 130,
+        "action_started": 191,
+        "actor_moved": 110,
+        "action_completed": 69,
+        "world_facility_changed": 3,
+        "practice_completed": 20,
+        "social_interaction": 6,
+        "world_vitality_changed": 4,
+        "action_failed": 6,
+        "world_resource_added": 14,
+        "message_received": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 99.885
+    },
+    {
+      "seed": 20,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 15,
+        "action_started": 31,
+        "actor_moved": 18,
+        "action_completed": 8,
+        "practice_completed": 3,
+        "commitment_completed": 1,
+        "world_facility_changed": 6,
+        "world_resource_added": 14,
+        "message_received": 3,
+        "action_failed": 5,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 21,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 138,
+        "action_started": 209,
+        "world_facility_changed": 4,
+        "actor_moved": 126,
+        "action_completed": 74,
+        "practice_completed": 25,
+        "social_interaction": 4,
+        "world_resource_added": 14,
+        "message_received": 2,
+        "world_vitality_changed": 3,
+        "action_failed": 4
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 95.6
+    },
+    {
+      "seed": 22,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 67,
+        "action_started": 107,
+        "actor_moved": 66,
+        "action_completed": 38,
+        "practice_completed": 13,
+        "commitment_completed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 5,
+        "world_vitality_changed": 2,
+        "action_failed": 2,
+        "message_received": 2
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 99.82833335
+    },
+    {
+      "seed": 23,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 17,
+        "action_started": 36,
+        "actor_moved": 16,
+        "action_completed": 7,
+        "world_vitality_changed": 4,
+        "practice_completed": 2,
+        "social_interaction": 1,
+        "world_facility_changed": 4,
+        "action_failed": 12,
+        "world_resource_added": 14,
+        "action_blocked": 4,
+        "message_received": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 24,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "message_received": 1,
+        "goal_changed": 21,
+        "action_started": 43,
+        "actor_moved": 24,
+        "action_completed": 12,
+        "practice_completed": 4,
+        "commitment_completed": 1,
+        "world_facility_changed": 7,
+        "world_resource_added": 14,
+        "world_vitality_changed": 1,
+        "action_failed": 7,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 25,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 151,
+        "action_started": 220,
+        "actor_moved": 132,
+        "action_completed": 81,
+        "practice_completed": 28,
+        "social_interaction": 6,
+        "message_received": 3,
+        "world_resource_added": 14,
+        "world_facility_changed": 2,
+        "world_vitality_changed": 4
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 93.92833345
+    },
+    {
+      "seed": 26,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 8,
+        "action_started": 21,
+        "actor_moved": 10,
+        "action_completed": 3,
+        "world_facility_changed": 4,
+        "practice_completed": 1,
+        "action_failed": 8,
+        "commitment_missed": 1,
+        "world_resource_added": 14,
+        "message_received": 2,
+        "world_vitality_changed": 3,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 11.22000076
+    },
+    {
+      "seed": 27,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "message_received": 3,
+        "goal_changed": 140,
+        "action_started": 205,
+        "actor_moved": 120,
+        "action_completed": 71,
+        "practice_completed": 19,
+        "social_interaction": 7,
+        "world_vitality_changed": 2,
+        "world_resource_added": 14,
+        "world_facility_changed": 4,
+        "action_failed": 6
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 99.85333335
+    },
+    {
+      "seed": 28,
+      "scene": "apartment_sustainable",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 29,
+        "action_started": 48,
+        "actor_moved": 28,
+        "action_completed": 15,
+        "message_received": 2,
+        "practice_completed": 5,
+        "commitment_completed": 1,
+        "world_vitality_changed": 1,
+        "world_resource_added": 14,
+        "world_facility_changed": 6,
+        "action_failed": 5,
+        "action_blocked": 1
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 0
+    },
+    {
+      "seed": 29,
+      "scene": "roommates",
+      "days": 7,
+      "external_events": 9,
+      "event_counts": {
+        "goal_changed": 112,
+        "action_started": 167,
+        "actor_moved": 96,
+        "action_completed": 59,
+        "practice_completed": 21,
+        "social_interaction": 4,
+        "message_received": 4,
+        "world_facility_changed": 3,
+        "world_resource_added": 14,
+        "world_vitality_changed": 2,
+        "action_failed": 8
+      },
+      "end_resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "min_actor_vitality": 36.68000258
+    }
+  ]
+}

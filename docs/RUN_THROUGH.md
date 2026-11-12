@@ -1,146 +1,164 @@
-# 从程序启动到第一次行动：逐函数追踪
+# 沿实际执行时间线逐函数讲解
 
-请先在工程根目录准备一个新的数据库：
+本文使用打包中真实运行过的 `results/apartment_sustainable_720h.db`、`results/apartment_interrupt_72h.db` 进行追踪。示例数据中的 `t` 为**模拟启动后的绝对分钟**，不是现实世界时钟。建议一边阅读，一边打开 `simlife/engine.py` 和 `simlife/actions.py`。
 
-```powershell
-python -m simlife examples/scenarios/apartment.json --hours 3 --db data/walkthrough.db --tail 30
+## 一、从主命令开始
+
+执行：
+
+```bash
+python -m simlife examples/scenarios/apartment_sustainable.json --hours 72 --db data/tutorial.db --tail 30
 ```
 
-所有时间都是 **模拟开始后的绝对分钟**，不是东京时区的实际钟点。
+1. `simlife/__main__.py` 调用 `cli.main()`。
+2. `config.load_scenario()` 加载 JSON：世界、人物、具体人物的起始位置与认知。
+3. `SQLiteStore.load_or_create()` 没找到数据库快照，创建 `WorldRuntime`。
+4. `WorldRuntime.__init__()` 克隆人物与世界资源，安排世界事件（t=1440 的水/食物补给，之后每隔 1440 分钟重复）和人物第 0 分钟的 `decide`。
+5. `run_until(4320)` 不断取出下一条事件，先推进自然动态，再派发事件；时间最终达到 72 小时。
+6. `store.save()` 在同一事务中持久化现场和已发生事件。
 
-## 第 1 步：CLI 组装世界
+这时还没有调用任何 LLM。
 
-`simlife/__main__.py` 调用 `cli.main()`，读取 `scenario`、`--hours` 和 `--db`。`config.load_scenario()` 依次读取：
+## 二、t=0：人物刚启动，为什么什么都不做？
 
-1. `examples/scenarios/apartment.json`：一个 `resident_01` 角色，起始在 `bedroom`，预先知道四个设施位置。
-2. `examples/worlds/apartment.json`：卧室、走廊、厨房、画室的连接；水库存 18、食物 10；水龙头可减少 `thirst`。
-3. `examples/personas/artist.json`：口渴初始 32，每小时 +4.5，行动评分阈值 40。
+第 0 分钟从 `queue` 弹出 `decide`，执行 `_decide('resident_01')`。
 
-返回 `Scenario`，此时还没有发生行动。
+人物位于 `bedroom`，`perception.observe()` 只看见卧室里的 `bed`。它先观察从卧室可通往 `hall` 的已知道路，并且保存到 `known_edges`。尽管人物“听说过”厨房和画室，不代表此刻知道远处所有道路的拓扑。
 
-`store.load_or_create()` 读取 SQLite。没有存档就调用 `WorldRuntime(scenario)`；有存档就恢复上次的世界分钟、角色、资源、事件队列与进行中的动作。
+`policy.choose_action()` 检查需求阈值、到期承诺、是否有人可交流、是否到了主动练习时间。此刻需求不足，模拟时间相当于 00:00，没有合适的社交或练习条件，于是返回 `Decision(None, None)`。
 
-## 第 2 步：生成未来事件
+引擎安排下一次 `decide(t=30)`。
 
-新的 `WorldRuntime` 初始化 `minute=0`，克隆角色状态，并安排：
+## 三、t=240~249：第一次满足口渴
+
+仓库中真实的事件记录：
 
 ```text
-t=0      decide(resident_01)
-t=1440   resource_add(water, +4)
-t=2880   resource_add(food, +4)
+ t=240  goal_changed      None → thirst
+ t=240  action_started    move → hall
+ t=242  actor_moved       hall
+ t=242  action_started    move → kitchen
+ t=245  actor_moved       kitchen
+ t=245  action_started    use → tap
+ t=249  action_completed  use tap，thirst 实际降低 45.77
+ t=249  goal_changed      thirst → None
 ```
 
-`_schedule()` 只把任务放入优先队列，不会立即执行。
+这些事件对应实际函数：
 
-## 第 3 步：WorldRuntime.run_until(180)
+- `HomeostasisDynamics.advance()` 使口渴需求达到阈值。
+- `choose_action()` 选择 `thirst`，发现水龙头在厨房，规划第一段 `move(hall)`。
+- `ActionRegistry.get('move')` 得到 `Move`，`Move.prepare()` 检查连边与能力，只计算时长，不修改位置。
+- `WorldRuntime.schedule()` 安排未来的 `action_complete`。
+- 直到 t=242，`Move.complete()` 才真正把位置设置为 `hall`，并立即重新决策。
+- 到 t=245 才到达厨房，开始 `UseFacility.prepare('tap')`。
+- 到 t=249，`UseFacility.complete()` 调用 `StandardFacilityResolver.resolve()` 检查真实资源，扣减库存、改变需求，并更新需求锚点。
 
-核心循环只做三件事情：
+注意：这一连串动作不是一次 LLM 生成的故事文本，而是几条独立结算的程序事件。
 
-```python
-item = heapq.heappop(self.queue)  # 取下一个待处理事件
-self.dynamics.advance(...)        # 先推进到该时刻的自然变化
-self._dispatch(item)              # 然后执行到期事件
-```
-
-第 0 分钟的事件是 `decide`，会调用 `_decide()`。
-
-`_decide()` 先向 `perception.observe()` 请求**当前地点可以看到什么**。因为角色位于卧室，所以只能实际观察卧室的 `bed`；它虽然记得水龙头的位置，但**不知道世界此刻的实时水库存**。
-
-`remember_observation()` 更新设施知识。`policy.choose()` 随后查看需求是否值得采取行动。此时口渴 32，小于阈值 40，其他需求也未达到行动条件，于是返回不行动。
-
-World 安排第 30 分钟重新决策。
-
-## 第 4 步：时间使需求产生变化
-
-`Dynamics.advance()` 按模型规定推进：
+## 四、t=489~584：无需用户指令的主动练习
 
 ```text
-t=0    thirst=32
-t=30   thirst=34.25
-t=60   thirst=36.5
-t=90   thirst=38.75
-t=120  thirst=41
+ t=489  goal_changed       None → practice:drawing
+ t=489  action_started     move → hall
+ t=492  actor_moved        hall
+ t=492  action_started     move → studio
+ t=494  actor_moved        studio
+ t=494  action_started     practice → practice_drawing
+ t=584  practice_completed drawing: 4.0 → 4.96666667
+ t=584  action_completed   practice
+ t=584  goal_changed       practice:drawing → None
 ```
 
-因此到了 **t=120**，口渴已经成为可执行目标。
+驱动这次练习的不是饿、渴或疲劳，而是 `Persona.interests['drawing']`、时间窗口、体力门槛和距离上次创作的间隔。这个例子说明人物已能在没有聊天输入的情况下产生非生存目标。
 
-`policy.choose()` 返回“为解决 `thirst`，去使用已知的 `tap`”。它并没有直接改变库存或口渴值，而只是返回一个 `ActionIntent(kind='move',target='hall')`。
+`t=494` 开始练习时**技能并不改变**；真正的提升出现在 `t=584` 行动结束时。接着 `progress_skill_goal()` 更新长期“绘画能力达到 40”的进度，未来达标才会写入 `long_goal_completed`。
 
-## 第 5 步：先移动，再使用
+## 五、t=720 的承诺，为什么直到 t=859 才完成？
+
+`scenario` 为人物配置了第 720 分钟的绘画承诺。但是第 720 分钟没有强制直接让人物瞬移或取消所有事情。角色还在处理生存需求：
 
 ```text
-t=120  目标 = thirst；开始从 bedroom 移动到 hall
-t=122  move_finished → World 实际把位置改为 hall
-t=122  再决策；继续朝 kitchen 移动
-t=125  move_finished → 实际到达 kitchen
-t=125  再决策；开始使用 tap（需要 4 分钟）
-t=129  use_finished → 结算资源与效果
+ t=734  goal_changed       None → hunger
+ t=739  action_started     use → meal
+ t=764  action_completed   meal
+ t=764  goal_changed       hunger → commitment:practice_drawing
+ t=769  action_started     practice → practice_drawing
+ t=859  commitment_completed
+ t=859  practice_completed drawing: 4.9667 → 5.92527778
 ```
 
-注意 `busy`：行动开始时只记录“正在执行什么、哪一分钟完成”。位置变化要等 `move_finished`，饮水效果要等 `use_finished`。
+承诺有宽限期，且只有真正的练习完成才算兑现。若到期后一直没有可行行动，系统会把承诺标记为 `missed`，而不是假装完成。
 
-结算在 `StandardFacilityResolver.resolve()` 中：
+## 六、另一条分支：t=550 的行动中断
 
-- 如果不在厨房，返回 `wrong_location`；
-- 如果水库存不足，返回 `resource_unavailable`，**不减少口渴**；
-- 如果检查通过，水库存 `18 -> 17`；
-- t=129 口渴自然增长到 41.675，饮水效果最多 -60，所以实际口渴 `41.675 -> 0`；
-- 对应需求的 `anchors` 记录 t=129 和新值 0。后面的自然增长从此刻重新计算。
-
-行动完成后再执行 `decide`。角色不再口渴，当前目标 `thirst` 被清除，继续等待下次需求出现。
-
-## 第 6 步：资源失败与更换方案（v0.2 / v0.3）
-
-运行：
-
-```powershell
-python -m simlife examples/scenarios/resilience.json --hours 1 --db data/resilience_walk.db --tail 40
-```
-
-真实执行序列：
+`results/apartment_interrupt_72h.db` 与上面使用相同生活场景，但额外在 t=550 安排一次显著降低行动能力的世界事件。
 
 ```text
-t=0   traveler 决定满足 thirst
-t=2   到 hall
-t=4   到 kitchen，开始尝试 tap
-t=6   tap 使用失败：resource_unavailable
-      Life 记下 last_result 和失败冷却时间
-      但 thirst 目标没有消失
-t=8   到 hall
-t=12  到 storage，使用另一种已知设施 bottle
-t=14  bottle 成功，降低 thirst，清除目标
+ t=494  action_started      practice → practice_drawing（计划 t=584 完成）
+ t=550  world_vitality_changed  -95
+ t=550  action_interrupted  practice，原因 low_vitality
+ t=550  goal_changed        practice:drawing → None
 ```
 
-**决策器知道自己以前失败过，但它不能改写 World 的真实库存。** 如果所有设施都没有资源，就继续保持未满足的目标，等待世界变化或延迟重试，而不是凭空生成水。
+引擎发现角色行动能力已经低于可用门槛，调用 `interrupt()`：
 
-另一个 `discovery.json` 场景最初不知道任何设施。它会沿着已知地点图探索，到达新房间才能把当地设施加入 `beliefs`。
+1. 清理当前 `busy`。
+2. 增加 `action_ticket`。
+3. 记录中断原因和经历。
+4. 原有 t=584 的完成事件留在队列中，但处理时发现 `ticket` 不匹配，**不再产生练习成果**。
+5. 调度重新决策，人物改为优先恢复可行动状态。
 
-## 第 7 步：身体能力与 NPC 支援（v0.4 / v0.5）
+因此该 72 小时场景只有 4 次完整练习，而对照场景有 6 次。这个差别来自可追溯的行动中断，不是角色生成了不同描述文本。
 
-运行：
+## 七、失败也会变成经历
 
-```powershell
-python -m simlife examples/scenarios/care.json --hours 1 --db data/care_walk.db --tail 30
-```
-
-`patient` 的初始 `vitality=7`，低于一般移动的最低值 12；它不能像正常角色一样行走。`caretaker` 从同一间卧室开始，观察到另一角色需要协助，会执行 `assist` 行动：
+在 `apartment_scarce` 资源短缺世界中，前几次尝试饮水可能遇到设施停业，后续可能遇到水库存耗尽。
 
 ```text
-t=0   caretaker 开始 assist(patient)
-t=15  assist_finished：World 结算一次 +22 vitality
-t=15  如果仍低于协助判断阈值，再安排一次 assist
-t=30  第二次协助完成；patient 之后恢复基础行动能力
+ t=969  action_failed: use tap → facility_disabled
+ t=1153 action_failed: use tap → facility_disabled
+ t=2687 action_failed: use tap → resource_unavailable
 ```
 
-这只是**示例性支援规则**，不是真正的医疗行为。它被明确定义在 Persona 里，且必须满足同处一地、行动时间和能力门槛，不能被叙述凭空触发。
+`UseFacility.complete()` 检查失败，记录个人对该设施的上次使用结果，并设置重试冷却时间；没有扣减不存在的资源，也没有修改成“水已经喝到了”。当未来世界事件发生时，角色才可能再次尝试。
 
-## 第 8 步：保存与重启
+## 八、两个人物的交谈为什么不能随意结束？
 
-CLI 最后执行 `store.save(runtime)`，一次 SQLite 事务保存两类数据：
+在 `roommates.json` 中，若一名角色发起 `socialize(other)`：
 
-- `checkpoint`：当前时间、生命状态、认知、目标、动作、库存、待处理事件；
-- `events`：此前已完成的行为与世界事件，方便审计。
+- `Socialize.prepare()` 要求双方同地点且另一人空闲，返回 `ActionPlan(duration=20, participants=(other,))`。
+- 引擎同时标记双方占用，记录一次 `action_started`。
+- 两人无法在这 20 分钟里同时执行互斥行动。
+- 完成后才更新彼此关系、短时情绪和情景记忆。
+- 若任一方收到必须打断的世界事件，取消整项行动。
 
-**队列与 busy 都必须保存**，否则在喝水或睡觉中途重启就会丢失原定完成事件。
+在初版实验中未占用另一方，30 天内发生了两次“谈话对象已经离开”。加入参与者占用后重新运行，社交次数从 28 变为 29，且没有 `target_left` 失败。详见 `EXPERIMENTS.md`。
 
-`run_until()` 本身只在内存中工作，CLI 在一次命令结束时保存。连续线上服务还需要增加周期性存档和外部副作用可靠投递机制。
+## 九、恢复运行不会重复执行动作
+
+```bash
+python -m simlife examples/scenarios/apartment_sustainable.json --hours 24 --db data/resume.db
+python -m simlife examples/scenarios/apartment_sustainable.json --hours 24 --db data/resume.db
+```
+
+第二次是在第 24 小时继续到第 48 小时，数据库中保留了 `queue`、`busy`、`ticket`、资源、已知地图、人物情绪、长期目标和认知调用预算。测试 `test_05_snapshot_resumes`、`test_06_in_flight_action_resumes` 验证了中途恢复与一次性运行的一致性。
+
+## 十、如何自己检查原始日志？
+
+直接使用 SQLite 查询：
+
+```sql
+SELECT minute, type, actor, details_json
+FROM events
+WHERE minute BETWEEN 480 AND 600
+ORDER BY id;
+```
+
+或者执行：
+
+```bash
+python scripts/trace.py results/apartment_interrupt_72h.db --from-minute 480 --to-minute 600
+```
+
+**完整路线图**请配合 `PSEUDOCODE.md` 阅读。

@@ -1,0 +1,62 @@
+{
+  "id": "human_reader",
+  "name": "小周",
+  "biography": "学生，外向、善于交际，喜欢阅读。",
+  "traits": {
+    "extraversion": 0.8,
+    "agreeableness": 0.58,
+    "conscientiousness": 0.53,
+    "openness": 0.65
+  },
+  "interests": {
+    "reading": 0.85
+  },
+  "ambitions": {
+    "reading": 40
+  },
+  "drives": {
+    "thirst": {
+      "initial": 25,
+      "rise_per_hour": 3.7,
+      "threshold": 45,
+      "priority": 4
+    },
+    "hunger": {
+      "initial": 25,
+      "rise_per_hour": 2.4,
+      "threshold": 50,
+      "priority": 3
+    },
+    "sleep_pressure": {
+      "initial": 28,
+      "rise_per_hour": 2.5,
+      "threshold": 65,
+      "priority": 3
+    },
+    "fatigue": {
+      "initial": 12,
+      "rise_per_hour": 1.2,
+      "threshold": 70,
+      "priority": 2
+    }
+  },
+  "body": {
+    "initial_vitality": 95,
+    "idle_recovery_per_hour": 0.3,
+    "move_cost_per_hour": 0.8,
+    "use_cost_per_hour": 0.3,
+    "rest_recovery_per_hour": 1.8,
+    "min_move_vitality": 12,
+    "min_use_vitality": 6,
+    "critical_drives": {
+      "thirst": [
+        91,
+        1.8
+      ],
+      "hunger": [
+        96,
+        0.8
+      ]
+    }
+  }
+}

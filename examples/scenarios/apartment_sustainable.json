@@ -15,8 +15,19 @@
         "bed",
         "tap",
         "meal",
-        "desk"
-      ]
+        "practice_drawing",
+        "practice_reading"
+      ],
+      "commitments": [
+        {
+          "minute": 720,
+          "kind": "practice",
+          "target": "practice_drawing"
+        }
+      ],
+      "skills": {
+        "drawing": 4
+      }
     }
   ]
 }

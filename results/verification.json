@@ -1,0 +1,23 @@
+{
+  "unit_tests": {
+    "exit_code": 0,
+    "command": "/opt/pyvenv/bin/python -m unittest discover -s tests -v",
+    "tail": "test_12_knowledge_is_local (test_simulation.WorldTests.test_12_knowledge_is_local) ... ok\ntest_13_local_map_expands_after_visit (test_simulation.WorldTests.test_13_local_map_expands_after_visit) ... ok\ntest_14_past_message_does_not_create_resources (test_simulation.WorldTests.test_14_past_message_does_not_create_resources) ... ok\n\n----------------------------------------------------------------------\nRan 58 tests in 1.937s\n\nOK"
+  },
+  "benchmarks": {
+    "exit_code": 0,
+    "command": "/opt/pyvenv/bin/python scripts/benchmark.py",
+    "tail": "        \"skills\": {\n          \"reading\": 48.5893367\n        },\n        \"min_vitality\": 95.0\n      }\n    }\n  }\n}"
+  },
+  "stress": {
+    "exit_code": 0,
+    "command": "/opt/pyvenv/bin/python scripts/stress.py",
+    "tail": "PASS 30 deterministic replay stress tests, 7 simulated days per seed\nEvents: {'goal_changed': 1802, 'action_started': 2868, 'actor_moved': 1664, 'action_completed': 936, 'practice_completed': 293, 'commitment_completed': 13, 'world_resource_added': 420, 'world_facility_changed': 139, 'world_vitality_changed': 64, 'message_received': 67, 'social_interaction': 49, 'action_failed': 210, 'commitment_missed': 2, 'action_blocked': 26}"
+  },
+  "compile": {
+    "exit_code": 0,
+    "command": "/opt/pyvenv/bin/python -m compileall -q simlife tests scripts",
+    "tail": ""
+  },
+  "all_passed": true
+}

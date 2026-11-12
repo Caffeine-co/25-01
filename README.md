@@ -1,117 +1,121 @@
-# WorldLife v0.5 · 无 LLM 的世界与生命模拟实验
+# WorldLife Next v1.0 — 可运行的虚拟人物研究工程
 
-基于 `Caffeine-co/25-01` 的 `world-preview`（v0.1）继续开发。**核心仍是一个 Python 事件循环，不依赖 NoneBot、LLM、Pydantic 或第三方库。** 目标是验证角色在有限认知下可以做决定、遇到失败后调整行动，并且让世界独立结算实际后果。
+> 在 [`Caffeine-co/25-01` 的 `world-preview` 分支](https://github.com/Caffeine-co/25-01/tree/world-preview) 所采用的 **World → Life → Action → World** 思路上扩展。此工程为**独立可运行的后继实验包**，不是原分支的逐字镜像。
+>
+> **定位**：可审计、可复现的角色行为模拟研究原型；**不是**经过心理学或医学验证的真实人类模型。
 
-> 这是**可运行、可重复测试的教学／研究原型**，不是通用的真实生命模拟器。`vitality` 与需求值都是 0–100 的游戏式抽象指标；不具备医学准确性，也不能据此推断人类健康状况。
+本工程已实现：离散事件世界、有限感知、需求调节、主动兴趣活动、行动中断、多人社交占用、长期技能目标、基础情绪、关系、情景记忆、SQLite 续跑、可选 OpenAI 兼容 LLM 语言/行动建议接口、离线基准测试。
 
-## 1. 最快上手
+## 1. 立即运行
 
-Python **3.11+**，在工程根目录运行：
+需要 **Python 3.11+**。**核心模拟不需要安装第三方库，也不需要网络。** 在本目录执行：
 
-```powershell
-# 自动化验收（30 项）
+```bash
+# 1) 全套自动化测试：58 项
 python -m unittest discover -s tests -v
 
-# 一个熟悉住所的普通角色，运行 72 小时（必须使用一个新 db）
-python -m simlife examples/scenarios/apartment.json --hours 72 --db data/my_apartment.db
+# 2) 运行 72 小时单人模拟，生成自有存档
+python -m simlife examples/scenarios/apartment_sustainable.json --hours 72 --db data/my_run.db
 
-# 资源不足：先碰到空水龙头，再改用另一种水源
-python -m simlife examples/scenarios/resilience.json --hours 12 --db data/my_resilience.db
+# 3) 接着运行 72 小时（不会重置到零）
+python -m simlife examples/scenarios/apartment_sustainable.json --hours 72 --db data/my_run.db
 
-# 不认识设施的探索者
-python -m simlife examples/scenarios/discovery.json --hours 12 --db data/my_discovery.db
+# 4) 双人物 7 天，自主练习及社交
+python -m simlife examples/scenarios/roommates.json --hours 168 --db data/roommates.db
 
-# 一个 NPC 在同一地点帮助低行动能力的角色
-python -m simlife examples/scenarios/care.json --hours 12 --db data/my_care.db
-
-# 定期补给的公寓，在 30 天内持续运行
-python -m simlife examples/scenarios/apartment_sustainable.json --hours 720 --db data/my_stable.db
-
-# 从头重新生成 72 小时与 30 天实验报告、CSV 和 SQLite
+# 5) 重新生成各场景的数据（会覆盖 results/ 中对应输出）
 python scripts/benchmark.py
+
+# 6) 30 组固定种子、每组 7 天的扰动与回放一致性测试
+python scripts/stress.py
+
+# 7) 不联网，演示“模型建议被拒绝/接受”的权限边界
+python scripts/llm_mock_demo.py
 ```
 
-**再次对同一个 `--db` 执行 `--hours 72`，是在原有世界时间上继续前进 72 小时。** 要从头运行，请换一个数据库文件。`results/` 内是已执行的实验输出，重新运行 `benchmark.py` 会覆盖这部分示例实验文件。
+`results/` 已附带实际生成的 SQLite、CSV、汇总 JSON、测试和压力实验输出。直接查看 `results/summary.json` 或 `docs/EXPERIMENTS.md`。
 
-## 2. 按真实执行顺序理解代码
+## 2. 可选 LLM：只做建议，绝不直接改世界
+
+离线示例不调用任何网络：
+
+```bash
+python -m simlife.chat examples/scenarios/apartment_sustainable.json \
+  --db data/chat.db --actor resident_01 --message "今天想画什么？" --provider offline
+```
+
+如需**真实模型**，将以下环境变量配置为一个支持 OpenAI `/chat/completions`、`response_format=json_object` 的 API：
 
 ```text
-cli.main()
-  └─ config.load_scenario()           读取三个 JSON：世界/人设/角色装配
-      └─ SQLiteStore.load_or_create() 恢复或创建 WorldRuntime
-          └─ WorldRuntime.run_until()
-              ├─ Dynamics.advance()   根据时间演化需求与行动能力
-              ├─ _dispatch(decide)
-              │   ├─ observe()         仅观察当前地点
-              │   ├─ remember_observation() 更新设施记忆
-              │   └─ policy.choose()   保持目标/探索/选行动
-              ├─ _dispatch(move_finished) 移动成功才更新地点
-              ├─ _dispatch(use_finished)  检查资源并结算实际效果
-              └─ _dispatch(assist_finished) 简化 NPC 协助
-          └─ SQLiteStore.save()       原子保存检查点与事件日志
+WORLDLIFE_LLM_API_KEY=<你的密钥>
+WORLDLIFE_LLM_BASE_URL=https://api.openai.com/v1
+WORLDLIFE_LLM_MODEL=<实际可用模型名称>
 ```
 
-**建议第一份阅读材料：[docs/RUN_THROUGH.md](docs/RUN_THROUGH.md)**。它沿着 t=0 到第一次喝水，以及资源失败和 NPC 帮助的运行轨迹逐步解释每个调用。
+运行时把 `--provider offline` 改为 `--provider remote`。如果提供商不支持 JSON Object 输出模式，请修改 `simlife/cognition.py` 的请求配置。默认每位角色每模拟日**最多四次模型调用**，可通过 `--max-calls` 调整。失败请求也计入额度；超时、解析错误、非法行动会回退或拒绝，不会修改世界。
 
-## 3. 文件与职责
+**注意**：由于当前构建环境无法访问公网，真实远程 API 未进行在线端到端验证；已通过 ScriptedBackend 完成接口、权限、预算、回退测试。这一部分属于可用集成接口，而非经过生产压力测试的聊天服务。
+
+## 3. 主要目录
 
 ```text
 simlife/
-  model.py       数据结构：世界定义、角色状态、个人认知、行动意图
-  config.py      JSON 装配与输入校验
-  engine.py      世界时间、事件队列、行动执行（核心）
-  systems.py     可替换的自然演化、决策、行动结算规则
-  perception.py  当前地点可见内容 → 个体设施认知
-  policy.py      需求目标 → 已知设施/探索 → 下一步行动
-  projection.py  只读角色视图（供日后外部交互使用）
-  store.py       SQLite 存档与事件日志
-  cli.py         命令行启动
+  model.py        # 世界、人物、记忆、关系、目标等纯数据类
+  config.py       # 世界/persona/scenario 三层装配与校验
+  engine.py       # 模拟时间、事件队列、World 状态唯一写入入口
+  systems.py      # 需求与身体状态自然演化；设施资源结算
+  perception.py   # 当前地点观察、更新个人设施认知
+  policy.py       # 需求目标 + 承诺 + 主动兴趣 + 社交选择
+  actions.py      # 通用行动注册器，支持多人占用和中断
+  memory.py       # 无外部依赖的轻量情景记忆检索
+  projection.py   # 不包含世界私密信息的角色视图
+  cognition.py    # 可选 LLM JSON 建议、预算、回退
+  chat.py         # CLI 单轮消息交互（不发送第三方平台消息）
+  store.py        # SQLite 快照与已发生事件日志
+  cli.py          # 主模拟 CLI
 examples/
-  worlds/        各个世界的地理、设施、资源和预设事件
-  personas/      个体需求、身体规则及简单协助能力
-  scenarios/     某世界中放入哪些角色、角色已知什么
+  personas/       # 人物需求、兴趣、人设、长期目标
+  worlds/         # 地点、设施、世界资源、事件
+  scenarios/      # 具体把哪些角色放进哪个世界
 scripts/
-  benchmark.py   运行多场景基准并生成数据
-results/         已实际运行的 SQLite/CSV/JSON 结果
+  build_examples.py  # 重建示例数据
+  benchmark.py       # 5 个场景长期实验，CSV + SQLite + JSON
+  stress.py          # 随机扰动与分段运行一致性检查
+  trace.py           # 查询 SQLite 事件审计日志
+  llm_mock_demo.py   # 模拟 LLM 的合法/非法意图演示
+  verify.py          # 一键验收
+results/             # 已实际运行的实验结果
   summary.json
-  *_72h.db
-  *_72h_hourly.csv
-  ...
+  stress_summary.json
+  *_hourly.csv
+  *.db
+  tests_console.txt
+  benchmark_console.txt
+  stress_console.txt
 tests/
-  test_simulation.py
- docs/
-  RUN_THROUGH.md
-  ARCHITECTURE.md
-  ITERATION_REPORT.md
-  EXTENSIONS.md
+  test_simulation.py # 自动化回归
+
+docs/
+  ARCHITECTURE.md    # 架构与不变量
+  PSEUDOCODE.md      # 完整执行伪代码
+  RUN_THROUGH.md     # 按真实数据逐函数追踪
+  EXPERIMENTS.md     # 实验设置、结果、缺陷与迭代
+  EXTENDING.md       # 扩展人物/世界/动作/认知方法
+  LIMITATIONS.md     # 未实现和未验证的能力
 ```
 
-## 4. 本版真实新增了什么
+## 4. 最重要的三个边界
 
-| 阶段 | 已实现的最小能力 | 未实现的部分 |
-|---|---|---|
-| v0.2 | 当前地点观察、有限设施知识、失败反馈、探索新地点 | 复杂感官、事实置信度和社会认知 |
-| v0.3 | 持续维持一个需求目标、逐段移动、失败后换目标设施 | 通用 GOAP、多层长期计划 |
-| v0.4 | `vitality`、持续风险损耗、行动阈值、休息中恢复 | 完整身体结构、疾病和医学模型 |
-| v0.5 | 独立 NPC、同地点协助、定时设施变化、重复资源补给 | 完整 NPC 社会、自由生成世界事件 |
-| 接口准备 | `actor_view()` 只读状态、可注入规则接口 | QQ/NoneBot/LLM 接入与真实外部消息 |
+1. **人物提出意图，不产生现实后果。** 例如 `ActionIntent('move','hall')` 只启动移动；直到 `action_complete`，引擎才改变位置。
+2. **人物知道的不等于客观事实。** `FacilityBelief` 与 `known_edges` 属于个体认知；程序不向决策器暴露其他房间的实时库存或未探索的地图连边。
+3. **LLM 的语言不是执行证明。** 模型声称“我已经画完了”不会推进技能；只有世界实际结算 `practice` 才会改变 `skills` 和长期目标。
 
-**不是 LLM 在写 World 状态。** Life 仅提交意图；资源、行动完成和跨角色协助必须由 `WorldRuntime` 实际执行并记录。角色的“知道”不等于世界客观存在。
+## 5. 与 world-preview v0.5 的关系
 
-## 5. 三件绝不能混淆的事情
+保留的核心概念：`WorldRuntime` / `LifeState` / `Persona` / `Facility` / `Observation` / `DecisionPolicy` / `HomeostasisDynamics` / `SQLiteStore`，以及 `worlds + personas + scenarios` 三层 JSON 装配。
 
-1. `WorldDefinition` 描述世界客观可用的规则、设施与地点；`LifeState.beliefs` 保存角色**认为**有哪些设施，可能过时。
-2. `goal` 是角色持续想解决的问题，例如 `thirst`；`busy` 是正在执行的具体动作，例如 `move`。一个动作失败不等于目标完成。
-3. `queue` 保存**未来待执行事件**；SQLite `events` 表保存**过去已发生的事件记录**；`checkpoint` 保存重启需要的完整现场。
+新增：`ActionRegistry`、多人参与者预约、可中断动作、人格倾向、主动兴趣、长期技能目标、承诺、事件记忆检索、关系动态、受限 LLM 桥接、58 项新测试和扰动实验。
 
-## 6. 验收结果（真实运行）
+**兼容性声明**：无法直接读取旧版的 SQLite 快照；新版本指纹不同。并未将原分支所有原始场景与测试逐字复制进包；本包附带的是新场景和新测试，并与 v0.5 所公开的配置结构保持主要字段兼容。原始 v0.5 的所有外部定制规则未逐项验收。
 
-本版有 **30 项测试**。另跑过 7 个场景 × 72 小时，以及 6 个场景 × 30 天的实验。两种有明确周期补给的世界在 30 天内分别完成 168 与 119 次设施行动，**没有行动失败或行动能力阻断事件**；有限库存世界则会因为资源耗尽而出现真正的持续危机，系统不会凭空治愈或重置库存。具体见 [迭代报告](docs/ITERATION_REPORT.md) 与 [原始数据](results/summary.json)。
-
-## 7. 接下来在哪里扩展？
-
-- 增加新世界和新生命类型：先仿照 `examples/worlds/`、`personas/`、`scenarios/`。不同类型生命可用同一引擎。
-- 增加自定义世界规律：扩展 `Dynamics`、`DecisionPolicy` 或 `FacilityResolver`，详见 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)。
-- 下一阶段真正有价值的改造：行动中断、目标进度与前置条件、可变空间知识、个体心理、动态 NPC 日程。不要急着重新加入旧版本的全部数值字段。
-
-**注意：旧 v0.1 的 SQLite 存档与本版不兼容。** 本版配置指纹含规则版本；必须用新 `--db` 开始模拟。这个设计是为了防止默默按照新规则解释旧状态。
+详细依据、代码入口和限制见文档。

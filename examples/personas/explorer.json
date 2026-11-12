@@ -1,8 +1,0 @@
-{
-  "id": "curious_traveler",
-  "drives": {
-    "thirst": {"initial": 85, "rise_per_hour": 3, "threshold": 40, "priority": 6},
-    "hunger": {"initial": 20, "rise_per_hour": 1, "threshold": 55, "priority": 2}
-  },
-  "body": {"initial_vitality": 85, "critical_drives": {"thirst": [95, 1]}}
-}

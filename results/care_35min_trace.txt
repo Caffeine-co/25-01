@@ -1,4 +1,0 @@
-t=    0 | action_started          | caretaker    | {"action": "assist", "target": "patient", "goal": null}
-t=   15 | assistance_completed    | caretaker    | {"target": "patient", "restored": 22.0}
-t=   15 | action_started          | caretaker    | {"action": "assist", "target": "patient", "goal": null}
-t=   30 | assistance_completed    | caretaker    | {"target": "patient", "restored": 22.0}

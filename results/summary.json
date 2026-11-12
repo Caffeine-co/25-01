@@ -1,1082 +1,225 @@
-[
-  {
-    "scenario": "apartment",
-    "hours": 72,
-    "minute": 4320,
-    "world": "ordinary_apartment",
-    "resources": {
-      "water": 14.0,
-      "food": 10.0
-    },
-    "event_count": 118,
-    "event_types": {
-      "action_completed": 17,
-      "action_started": 42,
-      "actor_moved": 24,
-      "goal_changed": 33,
-      "world_resource_added": 2
-    },
-    "completed_facilities": {
-      "bed": 2,
-      "desk": 3,
-      "meal": 4,
-      "tap": 8
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "resident_01": 90.0499997
-    },
-    "max_vitality": {
-      "resident_01": 100.0
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "resident_01": {
-        "location": "bedroom",
-        "vitality": 100.0,
-        "drives": {
-          "thirst": 26.025,
-          "hunger": 20.41,
-          "sleep_pressure": 61.4,
-          "fatigue": 38.37,
-          "creative_urge": 43.6
-        },
-        "goal": "sleep_pressure",
-        "busy": {
-          "kind": "use",
-          "facility": "bed",
-          "finish": 4518
-        },
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 4278
-          },
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 4273
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 4273
-          },
-          "desk": {
-            "last_result": "ok",
-            "last_seen": 3425
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "orbital",
-    "hours": 72,
-    "minute": 4320,
-    "world": "orbital_research_module",
-    "resources": {
-      "electricity": 83.0,
-      "coolant": 31.0
-    },
-    "event_count": 100,
-    "event_types": {
-      "action_completed": 13,
-      "action_started": 37,
-      "actor_moved": 24,
-      "goal_changed": 23,
-      "world_resource_added": 3
-    },
-    "completed_facilities": {
-      "charging_port": 4,
-      "cooling_station": 6,
-      "knowledge_terminal": 3
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "unit_07": 92.80166711
-    },
-    "max_vitality": {
-      "unit_07": 96.40333502
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "unit_07": {
-        "location": "maintenance_bay",
-        "vitality": 96.40333502,
-        "drives": {
-          "power_deficit": 1.125,
-          "thermal_load": 19.65833333,
-          "information_need": 10.25666667
-        },
-        "goal": null,
-        "busy": null,
-        "visited": [
-          "maintenance_bay",
-          "junction",
-          "archive",
-          "cooling_module"
-        ],
-        "beliefs": {
-          "charging_port": {
-            "last_result": "ok",
-            "last_seen": 4293
-          },
-          "cooling_station": {
-            "last_result": "ok",
-            "last_seen": 4193
-          },
-          "knowledge_terminal": {
-            "last_result": "ok",
-            "last_seen": 3958
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "resilience",
-    "hours": 72,
-    "minute": 4320,
-    "world": "resilience_test_world",
-    "resources": {
-      "water": 5.0,
-      "bottled_water": 0.0,
-      "food": 4.0
-    },
-    "event_count": 66,
-    "event_types": {
-      "action_completed": 7,
-      "action_failed": 2,
-      "action_started": 16,
-      "actor_moved": 6,
-      "goal_changed": 15,
-      "world_facility_changed": 2,
-      "world_resource_added": 18
-    },
-    "completed_facilities": {
-      "bottle": 3,
-      "meal": 1,
-      "tap": 3
-    },
-    "failure_reasons": {
-      "resource_unavailable": 2
-    },
-    "min_vitality": {
-      "traveler": 84.92499998
-    },
-    "max_vitality": {
-      "traveler": 95.1933334
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "traveler": {
-        "location": "kitchen",
-        "vitality": 95.1933334,
-        "drives": {
-          "thirst": 40.4,
-          "hunger": 36.16666667
-        },
-        "goal": "thirst",
-        "busy": {
-          "kind": "use",
-          "facility": "tap",
-          "finish": 4322
-        },
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "storage"
-        ],
-        "beliefs": {
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 4320
-          },
-          "bottle": {
-            "last_result": "resource_unavailable",
-            "last_seen": 1864
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 4320
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "discovery",
-    "hours": 72,
-    "minute": 4320,
-    "world": "resilience_test_world",
-    "resources": {
-      "water": 5.0,
-      "bottled_water": 0.0,
-      "food": 4.0
-    },
-    "event_count": 68,
-    "event_types": {
-      "action_completed": 7,
-      "action_failed": 2,
-      "action_started": 16,
-      "actor_moved": 6,
-      "facility_discovered": 2,
-      "goal_changed": 15,
-      "world_facility_changed": 2,
-      "world_resource_added": 18
-    },
-    "completed_facilities": {
-      "bottle": 3,
-      "meal": 1,
-      "tap": 3
-    },
-    "failure_reasons": {
-      "resource_unavailable": 2
-    },
-    "min_vitality": {
-      "newcomer": 84.92499998
-    },
-    "max_vitality": {
-      "newcomer": 95.1933334
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "newcomer": {
-        "location": "kitchen",
-        "vitality": 95.1933334,
-        "drives": {
-          "thirst": 40.4,
-          "hunger": 36.16666667
-        },
-        "goal": "thirst",
-        "busy": {
-          "kind": "use",
-          "facility": "tap",
-          "finish": 4322
-        },
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "storage"
-        ],
-        "beliefs": {
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 4320
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 4320
-          },
-          "bottle": {
-            "last_result": "resource_unavailable",
-            "last_seen": 1864
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "care",
-    "hours": 72,
-    "minute": 4320,
-    "world": "ordinary_apartment",
-    "resources": {
-      "water": 7.0,
-      "food": 6.0
-    },
-    "event_count": 192,
-    "event_types": {
-      "action_completed": 30,
-      "action_started": 67,
-      "actor_moved": 34,
-      "assistance_completed": 2,
-      "goal_changed": 57,
-      "world_resource_added": 2
-    },
-    "completed_facilities": {
-      "bed": 4,
-      "desk": 3,
-      "meal": 8,
-      "tap": 15
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "patient": 51.0499997,
-      "caretaker": 89.925
-    },
-    "max_vitality": {
-      "patient": 81.39999672,
-      "caretaker": 100.0
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "patient": {
-        "location": "bedroom",
-        "vitality": 81.39999672,
-        "drives": {
-          "thirst": 26.025,
-          "hunger": 20.41,
-          "sleep_pressure": 61.4,
-          "fatigue": 38.37,
-          "creative_urge": 43.6
-        },
-        "goal": "sleep_pressure",
-        "busy": {
-          "kind": "use",
-          "facility": "bed",
-          "finish": 4518
-        },
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 4278
-          },
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 4273
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 4273
-          },
-          "desk": {
-            "last_result": "ok",
-            "last_seen": 3425
-          }
-        }
-      },
-      "caretaker": {
-        "location": "kitchen",
-        "vitality": 100.0,
-        "drives": {
-          "thirst": 12.86666667,
-          "hunger": 43.05,
-          "sleep_pressure": 32.0
-        },
-        "goal": null,
-        "busy": null,
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 3429
-          },
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 4307
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 4307
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "apartment_sustainable",
-    "hours": 72,
-    "minute": 4320,
-    "world": "sustainable_apartment",
-    "resources": {
-      "water": 24.0,
-      "food": 16.0
-    },
-    "event_count": 122,
-    "event_types": {
-      "action_completed": 17,
-      "action_started": 42,
-      "actor_moved": 24,
-      "goal_changed": 33,
-      "world_resource_added": 6
-    },
-    "completed_facilities": {
-      "bed": 2,
-      "desk": 3,
-      "meal": 4,
-      "tap": 8
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "resident_01": 90.0499997
-    },
-    "max_vitality": {
-      "resident_01": 100.0
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "resident_01": {
-        "location": "bedroom",
-        "vitality": 100.0,
-        "drives": {
-          "thirst": 26.025,
-          "hunger": 20.41,
-          "sleep_pressure": 61.4,
-          "fatigue": 38.37,
-          "creative_urge": 43.6
-        },
-        "goal": "sleep_pressure",
-        "busy": {
-          "kind": "use",
-          "facility": "bed",
-          "finish": 4518
-        },
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 4278
-          },
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 4273
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 4273
-          },
-          "desk": {
-            "last_result": "ok",
-            "last_seen": 3425
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "orbital_sustainable",
-    "hours": 72,
-    "minute": 4320,
-    "world": "sustainable_orbital",
-    "resources": {
-      "electricity": 92.0,
-      "coolant": 43.0
-    },
-    "event_count": 101,
-    "event_types": {
-      "action_completed": 13,
-      "action_started": 35,
-      "actor_moved": 22,
-      "goal_changed": 23,
-      "world_resource_added": 8
-    },
-    "completed_facilities": {
-      "charging_port": 4,
-      "cooling_station": 6,
-      "knowledge_terminal": 3
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "unit_07": 92.80166711
-    },
-    "max_vitality": {
-      "unit_07": 96.56333498
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "unit_07": {
-        "location": "maintenance_bay",
-        "vitality": 96.56333498,
-        "drives": {
-          "power_deficit": 1.0,
-          "thermal_load": 33.78333334,
-          "information_need": 9.40666667
-        },
-        "goal": null,
-        "busy": null,
-        "visited": [
-          "maintenance_bay",
-          "junction",
-          "archive",
-          "cooling_module"
-        ],
-        "beliefs": {
-          "charging_port": {
-            "last_result": "ok",
-            "last_seen": 4296
-          },
-          "cooling_station": {
-            "last_result": "ok",
-            "last_seen": 3878
-          },
-          "knowledge_terminal": {
-            "last_result": "ok",
-            "last_seen": 4198
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "apartment",
+{
+  "apartment_sustainable": {
+    "scene": "apartment_sustainable",
     "hours": 720,
-    "minute": 43200,
-    "world": "ordinary_apartment",
-    "resources": {
-      "water": 0.0,
-      "food": 2.0
-    },
-    "event_count": 343,
-    "event_types": {
-      "action_blocked": 1,
-      "action_completed": 51,
-      "action_failed": 5,
-      "action_started": 124,
-      "actor_moved": 68,
-      "goal_changed": 92,
-      "world_resource_added": 2
-    },
-    "completed_facilities": {
-      "bed": 7,
-      "desk": 10,
-      "meal": 12,
-      "tap": 22
-    },
-    "failure_reasons": {
-      "low_vitality_use": 1,
-      "resource_unavailable": 5
-    },
-    "min_vitality": {
-      "resident_01": 0.0
-    },
-    "max_vitality": {
-      "resident_01": 100.0
-    },
-    "extreme_samples_by_drive": {
-      "resident_01.creative_urge": 457,
-      "resident_01.fatigue": 447,
-      "resident_01.hunger": 475,
-      "resident_01.sleep_pressure": 483,
-      "resident_01.thirst": 495
-    },
-    "end_lives": {
-      "resident_01": {
-        "location": "kitchen",
-        "vitality": 0.0,
-        "drives": {
-          "thirst": 100.0,
-          "hunger": 100.0,
-          "sleep_pressure": 100.0,
-          "fatigue": 100.0,
-          "creative_urge": 100.0
-        },
-        "goal": "thirst",
-        "busy": null,
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 11705
-          },
-          "tap": {
-            "last_result": "resource_unavailable",
-            "last_seen": 43123
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 43123
-          },
-          "desk": {
-            "last_result": "ok",
-            "last_seen": 12858
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "orbital",
-    "hours": 720,
-    "minute": 43200,
-    "world": "orbital_research_module",
-    "resources": {
-      "electricity": 11.0,
-      "coolant": 1.0
-    },
-    "event_count": 344,
-    "event_types": {
-      "action_blocked": 1,
-      "action_completed": 43,
-      "action_failed": 4,
-      "action_started": 131,
-      "actor_moved": 84,
-      "goal_changed": 78,
-      "world_resource_added": 3
-    },
-    "completed_facilities": {
-      "charging_port": 13,
-      "cooling_station": 21,
-      "knowledge_terminal": 9
-    },
-    "failure_reasons": {
-      "low_vitality_use": 1,
-      "resource_unavailable": 4
-    },
-    "min_vitality": {
-      "unit_07": 0.0
-    },
-    "max_vitality": {
-      "unit_07": 100.0
-    },
-    "extreme_samples_by_drive": {
-      "unit_07.information_need": 409,
-      "unit_07.power_deficit": 431,
-      "unit_07.thermal_load": 444
-    },
-    "end_lives": {
-      "unit_07": {
-        "location": "cooling_module",
-        "vitality": 0.0,
-        "drives": {
-          "power_deficit": 100.0,
-          "thermal_load": 100.0,
-          "information_need": 100.0
-        },
-        "goal": "thermal_load",
-        "busy": null,
-        "visited": [
-          "maintenance_bay",
-          "junction",
-          "archive",
-          "cooling_module"
-        ],
-        "beliefs": {
-          "charging_port": {
-            "last_result": "ok",
-            "last_seen": 15081
-          },
-          "cooling_station": {
-            "last_result": "resource_unavailable",
-            "last_seen": 43126
-          },
-          "knowledge_terminal": {
-            "last_result": "ok",
-            "last_seen": 15696
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "resilience",
-    "hours": 720,
-    "minute": 43200,
-    "world": "resilience_test_world",
-    "resources": {
-      "water": 5.0,
-      "bottled_water": 0.0,
-      "food": 0.0
-    },
-    "event_count": 441,
-    "event_types": {
-      "action_completed": 51,
-      "action_failed": 21,
-      "action_started": 78,
-      "actor_moved": 6,
-      "goal_changed": 103,
-      "world_facility_changed": 2,
-      "world_resource_added": 180
-    },
-    "completed_facilities": {
-      "bottle": 3,
-      "meal": 5,
-      "tap": 43
-    },
-    "failure_reasons": {
-      "resource_unavailable": 21
-    },
-    "min_vitality": {
-      "traveler": 84.92499998
-    },
-    "max_vitality": {
-      "traveler": 100.0
-    },
-    "extreme_samples_by_drive": {
-      "traveler.hunger": 368
-    },
-    "end_lives": {
-      "traveler": {
-        "location": "kitchen",
-        "vitality": 100.0,
-        "drives": {
-          "thirst": 57.4,
-          "hunger": 100.0
-        },
-        "goal": "hunger",
-        "busy": null,
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "storage"
-        ],
-        "beliefs": {
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 43200
-          },
-          "bottle": {
-            "last_result": "resource_unavailable",
-            "last_seen": 1864
-          },
-          "meal": {
-            "last_result": "resource_unavailable",
-            "last_seen": 43200
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "care",
-    "hours": 720,
-    "minute": 43200,
-    "world": "ordinary_apartment",
-    "resources": {
-      "water": 0.0,
-      "food": 1.0
-    },
-    "event_count": 326,
-    "event_types": {
-      "action_blocked": 2,
-      "action_completed": 47,
-      "action_failed": 11,
-      "action_started": 117,
-      "actor_moved": 54,
-      "assistance_completed": 5,
-      "facility_discovered": 1,
-      "goal_changed": 87,
-      "world_resource_added": 2
-    },
-    "completed_facilities": {
-      "bed": 7,
-      "desk": 5,
-      "meal": 13,
-      "tap": 22
-    },
-    "failure_reasons": {
-      "low_vitality_use": 2,
-      "resource_unavailable": 11
-    },
-    "min_vitality": {
-      "patient": 0.0,
-      "caretaker": 0.0
-    },
-    "max_vitality": {
-      "patient": 100.0,
-      "caretaker": 100.0
-    },
-    "extreme_samples_by_drive": {
-      "caretaker.hunger": 582,
-      "caretaker.sleep_pressure": 584,
-      "caretaker.thirst": 595,
-      "patient.creative_urge": 573,
-      "patient.fatigue": 529,
-      "patient.hunger": 584,
-      "patient.sleep_pressure": 573,
-      "patient.thirst": 594
-    },
-    "end_lives": {
-      "patient": {
-        "location": "kitchen",
-        "vitality": 0.0,
-        "drives": {
-          "thirst": 100.0,
-          "hunger": 100.0,
-          "sleep_pressure": 100.0,
-          "fatigue": 100.0,
-          "creative_urge": 100.0
-        },
-        "goal": "thirst",
-        "busy": null,
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 6314
-          },
-          "tap": {
-            "last_result": "resource_unavailable",
-            "last_seen": 43093
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 43093
-          },
-          "desk": {
-            "last_result": "ok",
-            "last_seen": 5979
-          }
-        }
-      },
-      "caretaker": {
-        "location": "kitchen",
-        "vitality": 0.0,
-        "drives": {
-          "thirst": 100.0,
-          "hunger": 100.0,
-          "sleep_pressure": 100.0
-        },
-        "goal": "thirst",
-        "busy": null,
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 5421
-          },
-          "tap": {
-            "last_result": "resource_unavailable",
-            "last_seen": 43119
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 43119
-          },
-          "desk": {
-            "last_result": null,
-            "last_seen": 6903
-          }
-        }
-      }
-    },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
-  },
-  {
-    "scenario": "apartment_sustainable",
-    "hours": 720,
-    "minute": 43200,
-    "world": "sustainable_apartment",
-    "resources": {
-      "water": 24.0,
-      "food": 16.0
-    },
-    "event_count": 1119,
-    "event_types": {
-      "action_completed": 168,
-      "action_started": 384,
-      "actor_moved": 216,
-      "goal_changed": 291,
+    "event_counts": {
+      "action_completed": 174,
+      "action_started": 462,
+      "actor_moved": 288,
+      "commitment_completed": 1,
+      "goal_changed": 311,
+      "long_goal_completed": 1,
+      "practice_completed": 59,
       "world_resource_added": 60
     },
-    "completed_facilities": {
-      "bed": 24,
-      "desk": 31,
-      "meal": 40,
-      "tap": 73
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "resident_01": 90.0499997
-    },
-    "max_vitality": {
-      "resident_01": 100.0
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
+    "actors": {
       "resident_01": {
-        "location": "kitchen",
-        "vitality": 100.0,
-        "drives": {
-          "thirst": 25.275,
-          "hunger": 4.42,
-          "sleep_pressure": 34.99999999,
-          "fatigue": 25.5,
-          "creative_urge": 34.0
+        "end_vitality": 100,
+        "min_vitality_hourly": 95.0,
+        "max_need_hourly": {
+          "thirst": 59.66,
+          "hunger": 57.41666667,
+          "sleep_pressure": 75.7,
+          "fatigue": 48.10000001,
+          "creative_urge": 19.2
         },
-        "goal": null,
-        "busy": null,
-        "visited": [
-          "bedroom",
-          "hall",
-          "kitchen",
-          "studio"
-        ],
-        "beliefs": {
-          "bed": {
-            "last_result": "ok",
-            "last_seen": 42300
-          },
-          "tap": {
-            "last_result": "ok",
-            "last_seen": 43200
-          },
-          "meal": {
-            "last_result": "ok",
-            "last_seen": 43200
-          },
-          "desk": {
-            "last_result": "ok",
-            "last_seen": 42854
+        "final_skills": {
+          "drawing": 49.19968427
+        },
+        "memories": 60,
+        "relationships": {},
+        "commitments": [
+          {
+            "minute": 720,
+            "kind": "practice",
+            "target": "practice_drawing",
+            "status": "completed"
           }
-        }
+        ]
       }
     },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
+    "end_inventory": {
+      "water": 40.0,
+      "food": 30.0
+    },
+    "hourly_rows": 721
   },
-  {
-    "scenario": "orbital_sustainable",
-    "hours": 720,
-    "minute": 43200,
-    "world": "sustainable_orbital",
-    "resources": {
-      "electricity": 100.0,
-      "coolant": 60.0
+  "apartment_scarce": {
+    "scene": "apartment_scarce",
+    "hours": 168,
+    "event_counts": {
+      "action_blocked": 1,
+      "action_completed": 9,
+      "action_failed": 7,
+      "action_started": 34,
+      "actor_moved": 18,
+      "goal_changed": 16,
+      "practice_completed": 3,
+      "world_facility_changed": 2
     },
-    "event_count": 965,
-    "event_types": {
-      "action_completed": 119,
-      "action_started": 329,
-      "actor_moved": 210,
-      "goal_changed": 216,
-      "world_resource_added": 91
-    },
-    "completed_facilities": {
-      "charging_port": 36,
-      "cooling_station": 60,
-      "knowledge_terminal": 23
-    },
-    "failure_reasons": {},
-    "min_vitality": {
-      "unit_07": 92.80166711
-    },
-    "max_vitality": {
-      "unit_07": 100.0
-    },
-    "extreme_samples_by_drive": {},
-    "end_lives": {
-      "unit_07": {
-        "location": "cooling_module",
-        "vitality": 99.74166675,
-        "drives": {
-          "power_deficit": 17.91666667,
-          "thermal_load": 13.125,
-          "information_need": 37.825
+    "actors": {
+      "resident_01": {
+        "end_vitality": 0,
+        "min_vitality_hourly": 0,
+        "max_need_hourly": {
+          "thirst": 100,
+          "hunger": 100,
+          "sleep_pressure": 100,
+          "fatigue": 100,
+          "creative_urge": 99.49333333
         },
-        "goal": null,
-        "busy": null,
-        "visited": [
-          "maintenance_bay",
-          "junction",
-          "archive",
-          "cooling_module"
-        ],
-        "beliefs": {
-          "charging_port": {
-            "last_result": "ok",
-            "last_seen": 42950
-          },
-          "cooling_station": {
-            "last_result": "ok",
-            "last_seen": 43180
-          },
-          "knowledge_terminal": {
-            "last_result": "ok",
-            "last_seen": 42195
-          }
-        }
+        "final_skills": {
+          "drawing": 2.97506945
+        },
+        "memories": 10,
+        "relationships": {},
+        "commitments": []
       }
     },
-    "consistency": {
-      "all_resources_nonnegative": true,
-      "all_vitalities_in_range": true,
-      "all_drive_values_in_range": true
-    }
+    "end_inventory": {
+      "water": 0.0,
+      "food": 0.0
+    },
+    "hourly_rows": 169
+  },
+  "apartment_interrupt": {
+    "scene": "apartment_interrupt",
+    "hours": 72,
+    "event_counts": {
+      "action_blocked": 1,
+      "action_completed": 15,
+      "action_interrupted": 1,
+      "action_started": 42,
+      "actor_moved": 26,
+      "goal_changed": 29,
+      "practice_completed": 4,
+      "world_resource_added": 6,
+      "world_vitality_changed": 2
+    },
+    "actors": {
+      "resident_01": {
+        "end_vitality": 100,
+        "min_vitality_hourly": 2.2166667,
+        "max_need_hourly": {
+          "thirst": 60.23,
+          "hunger": 70.0,
+          "sleep_pressure": 80.2,
+          "fatigue": 41.4,
+          "creative_urge": 38.4
+        },
+        "final_skills": {
+          "drawing": 3.9502772
+        },
+        "memories": 5,
+        "relationships": {},
+        "commitments": []
+      }
+    },
+    "end_inventory": {
+      "water": 40.0,
+      "food": 30.0
+    },
+    "hourly_rows": 73
+  },
+  "apartment_messages": {
+    "scene": "apartment_messages",
+    "hours": 72,
+    "event_counts": {
+      "action_completed": 17,
+      "action_started": 45,
+      "actor_moved": 28,
+      "goal_changed": 32,
+      "message_received": 1,
+      "practice_completed": 6,
+      "world_resource_added": 6
+    },
+    "actors": {
+      "resident_01": {
+        "end_vitality": 100,
+        "min_vitality_hourly": 95.0,
+        "max_need_hourly": {
+          "thirst": 45.34666667,
+          "hunger": 52.5,
+          "sleep_pressure": 74.3,
+          "fatigue": 47.285,
+          "creative_urge": 19.2
+        },
+        "final_skills": {
+          "drawing": 5.87638023
+        },
+        "memories": 7,
+        "relationships": {},
+        "commitments": []
+      }
+    },
+    "end_inventory": {
+      "water": 40.0,
+      "food": 30.0
+    },
+    "hourly_rows": 73
+  },
+  "roommates": {
+    "scene": "roommates",
+    "hours": 720,
+    "event_counts": {
+      "action_completed": 345,
+      "action_started": 928,
+      "actor_moved": 554,
+      "goal_changed": 634,
+      "long_goal_completed": 2,
+      "practice_completed": 118,
+      "social_interaction": 29,
+      "world_resource_added": 60
+    },
+    "actors": {
+      "resident_01": {
+        "end_vitality": 100,
+        "min_vitality_hourly": 95.0,
+        "max_need_hourly": {
+          "thirst": 59.40666667,
+          "hunger": 59.5,
+          "sleep_pressure": 75.69999999,
+          "fatigue": 48.055,
+          "creative_urge": 19.2
+        },
+        "final_skills": {
+          "drawing": 47.97898913
+        },
+        "memories": 89,
+        "relationships": {
+          "resident_02": {
+            "trust": 0.7514,
+            "interactions": 29
+          }
+        },
+        "commitments": []
+      },
+      "resident_02": {
+        "end_vitality": 100,
+        "min_vitality_hourly": 95.0,
+        "max_need_hourly": {
+          "thirst": 55.25333333,
+          "hunger": 61.0,
+          "sleep_pressure": 76.0,
+          "fatigue": 38.4
+        },
+        "final_skills": {
+          "reading": 48.5893367
+        },
+        "memories": 89,
+        "relationships": {
+          "resident_01": {
+            "trust": 0.7514,
+            "interactions": 29
+          }
+        },
+        "commitments": []
+      }
+    },
+    "end_inventory": {
+      "water": 40.0,
+      "food": 30.0
+    },
+    "hourly_rows": 1442
   }
-]
+}

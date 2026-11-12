@@ -1,4 +1,7 @@
-"""WorldLife 回归验收：同时检查能力边界和异常恢复。运行: python -m unittest discover -s tests -v"""
+"""离线验收：无第三方库、无网络、无真实 LLM 调用。
+
+测试按 World、Life、Action、Storage、Cognition 分组，包含基础回归、
+边界情况、决策权限与 30 天长跑。"""
 from __future__ import annotations
 
 import copy
@@ -7,317 +10,486 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from simlife.actions import ActionRegistry
+from simlife.cognition import (CognitionService, OfflineBackend, ScriptedBackend,
+                               validate_response)
 from simlife.config import load_scenario
 from simlife.engine import WorldRuntime
-from simlife.store import SQLiteStore
+from simlife.model import ActionIntent, Memory, clamp
 from simlife.projection import actor_view
-from simlife.model import Decision
+from simlife.store import SQLiteStore
 
 ROOT = Path(__file__).resolve().parents[1]
-CASES = ROOT / "examples/scenarios"
 
 
-def scenario(name: str):
-    return load_scenario(CASES / f"{name}.json")
+def scene(name='apartment_sustainable'):
+    return load_scenario(ROOT / 'examples' / 'scenarios' / (name + '.json'))
 
 
-def events(run: WorldRuntime, kind: str):
-    return [e for e in run.pending_log if e["type"] == kind]
+def runtime(name='apartment_sustainable'):
+    return WorldRuntime(scene(name))
 
 
-class TestWorldLife(unittest.TestCase):
-    def test_01_two_worlds_run_without_external_services(self):
-        for name in ("apartment", "orbital"):
-            with self.subTest(name=name):
-                r = WorldRuntime(scenario(name))
-                r.run_until(4320)
-                self.assertEqual(r.minute, 4320)
-                self.assertTrue(events(r, "action_completed"))
-                self.assertTrue(events(r, "actor_moved"))
-                self.assertTrue(events(r, "world_resource_added"))
-                self.assertTrue(all(0 <= d <= 100 for life in r.lives.values()
-                                    for d in life.drives.values()))
-                self.assertTrue(all(0 <= life.vitality <= 100 for life in r.lives.values()))
+def kinds(world):
+    return [e['type'] for e in world.pending_log]
 
-    def test_02_deterministic_same_initial_state(self):
-        a, b = WorldRuntime(scenario("apartment")), WorldRuntime(scenario("apartment"))
-        a.run_until(1440)
-        b.run_until(1440)
+
+class WorldTests(unittest.TestCase):
+    def test_01_scenario_loads(self):
+        self.assertEqual(scene().world.id, 'sustainable_apartment')
+
+    def test_02_simulation_24h(self):
+        w = runtime()
+        w.run_until(1440)
+        self.assertEqual(w.minute, 1440)
+        self.assertIn('action_completed', kinds(w))
+
+    def test_03_same_input_deterministic(self):
+        a, b = runtime(), runtime()
+        a.run_until(2880)
+        b.run_until(2880)
         self.assertEqual(a.snapshot(), b.snapshot())
         self.assertEqual(a.pending_log, b.pending_log)
 
-    def test_03_persist_resume_matches_one_pass(self):
-        s = scenario("resilience")
-        full = WorldRuntime(s)
-        full.run_until(1200)
-        with tempfile.TemporaryDirectory() as directory:
-            db = Path(directory) / "world.db"
-            with SQLiteStore(db) as store:
-                partial = store.load_or_create(s)
-                partial.run_until(363)
-                store.save(partial)
-            with SQLiteStore(db) as store:
-                restored = store.load_or_create(s)
-                restored.run_until(1200)
-                store.save(restored)
-                count = store.connection.execute("SELECT count(*) FROM events").fetchone()[0]
-            self.assertEqual(full.snapshot(), restored.snapshot())
-            self.assertEqual(len(full.pending_log), count)
+    def test_04_split_run_equivalent_to_one_step(self):
+        a, b = runtime(), runtime()
+        a.run_until(2880)
+        for minute in [0, 110, 550, 930, 1440, 1789, 2400, 2880]:
+            b.run_until(minute)
+        self.assertEqual(a.snapshot(), b.snapshot())
 
-    def test_04_restore_while_action_running(self):
-        s = scenario("apartment")
-        full = WorldRuntime(s)
-        full.run_until(1500)
-        partial = WorldRuntime(s)
-        for minute in range(1, 500):
-            partial.run_until(minute)
-            if any(life.busy for life in partial.lives.values()):
-                break
-        self.assertTrue(any(life.busy for life in partial.lives.values()))
-        with tempfile.TemporaryDirectory() as directory:
-            with SQLiteStore(Path(directory) / "test.db") as store:
-                store.save(partial)
-                restored = store.load_or_create(s)
-                restored.run_until(1500)
-            self.assertEqual(full.snapshot(), restored.snapshot())
+    def test_05_snapshot_resumes(self):
+        a = runtime()
+        a.run_until(660)
+        b = WorldRuntime.from_snapshot(scene(), json.loads(json.dumps(a.snapshot())))
+        a.run_until(2000)
+        b.run_until(2000)
+        self.assertEqual(a.snapshot(), b.snapshot())
 
-    def test_05_reject_different_scenario_save(self):
-        with tempfile.TemporaryDirectory() as directory:
-            with SQLiteStore(Path(directory) / "test.db") as store:
-                store.save(WorldRuntime(scenario("apartment")))
-                with self.assertRaisesRegex(ValueError, "规则版本发生变化"):
-                    store.load_or_create(scenario("orbital"))
+    def test_06_in_flight_action_resumes(self):
+        a = runtime()
+        a.run_until(520)  # 练习进行中
+        self.assertIsNotNone(a.lives['resident_01'].busy)
+        b = WorldRuntime.from_snapshot(scene(), a.snapshot())
+        a.run_until(1100)
+        b.run_until(1100)
+        self.assertEqual(a.snapshot(), b.snapshot())
 
-    def test_06_no_global_inventory_leak_in_life_knowledge(self):
-        r = WorldRuntime(scenario("discovery"))
-        life = r.lives["newcomer"]
-        self.assertEqual(life.beliefs, {})
-        r.run_until(0)
-        self.assertNotIn("tap", life.beliefs)
-        self.assertEqual(life.busy["kind"], "move")
-        self.assertNotIn("resources", life.to_dict())
+    def test_07_no_reverse_time(self):
+        w = runtime()
+        w.run_until(100)
+        with self.assertRaises(ValueError):
+            w.run_until(99)
 
-    def test_07_exploration_learns_local_facilities(self):
-        r = WorldRuntime(scenario("discovery"))
-        r.run_until(60)
-        life = r.lives["newcomer"]
-        self.assertGreater(len(life.visited), 1)
-        self.assertTrue(events(r, "facility_discovered"))
-        self.assertIn("tap", life.beliefs)
-        self.assertIn("bottle", life.beliefs)
+    def test_08_invalid_connection_rejected(self):
+        s = json.loads((ROOT / 'examples/worlds/apartment_sustainable.json').read_text())
+        s['locations']['hall']['missing'] = 2
+        with tempfile.TemporaryDirectory() as temp:
+            p = Path(temp)
+            (p / 'world.json').write_text(json.dumps(s), encoding='utf-8')
+            (p / 'scenario.json').write_text(json.dumps({
+                'world': 'world.json', 'actors': []}), encoding='utf-8')
+            with self.assertRaises(ValueError):
+                load_scenario(p / 'scenario.json')
 
-    def test_08_failed_attempt_produces_feedback_and_fallback(self):
-        r = WorldRuntime(scenario("resilience"))
-        r.run_until(20)
-        life = r.lives["traveler"]
-        failures = events(r, "action_failed")
-        self.assertEqual(failures[0]["details"]["reason"], "resource_unavailable")
-        self.assertEqual(life.beliefs["tap"].last_result, "resource_unavailable")
-        self.assertEqual(life.beliefs["bottle"].last_result, "ok")
-        self.assertEqual(events(r, "action_completed")[0]["details"]["facility"], "bottle")
-        self.assertEqual(life.goal, None)
-        self.assertGreater(life.failed_until["tap"], r.minute)
+    def test_09_facility_failure_no_negative_inventory(self):
+        w = runtime('apartment_scarce')
+        w.run_until(10080)
+        self.assertTrue(all(x >= 0 for x in w.resources.values()))
+        self.assertIn('action_failed', kinds(w))
 
-    def test_09_goal_survives_while_moving(self):
-        r = WorldRuntime(scenario("resilience"))
-        r.run_until(3)
-        self.assertEqual(r.lives["traveler"].goal, "thirst")
-        self.assertEqual(r.lives["traveler"].busy["kind"], "move")
+    def test_10_resource_add_has_cap(self):
+        w = runtime()
+        w.run_until(50_000)
+        for key, (_, cap) in w.scenario.world.initial_resources.items():
+            self.assertLessEqual(w.resources[key], cap)
 
-    def test_10_recurring_resource_event_works_without_agents(self):
-        r = WorldRuntime(scenario("resilience"))
-        r.run_until(725)
-        self.assertEqual([e["minute"] for e in events(r, "world_resource_added")], [240, 480, 720])
-        self.assertEqual(r.resources["water"], 5)
+    def test_11_hidden_inventory_not_in_actor_view(self):
+        w = runtime()
+        self.assertNotIn('resources', actor_view(w, 'resident_01'))
+        self.assertNotIn('water', json.dumps(actor_view(w, 'resident_01')))
 
-    def test_11_facility_outage_and_recovery(self):
-        r = WorldRuntime(scenario("resilience"))
-        r.run_until(700)
-        changes = events(r, "world_facility_changed")
-        self.assertEqual([e["details"]["enabled"] for e in changes], [False, True])
-        self.assertTrue(r.enabled["bottle"])
+    def test_12_knowledge_is_local(self):
+        w = runtime()
+        w.run_until(0)
+        life = w.lives['resident_01']
+        self.assertIn('bedroom', life.known_edges)
+        self.assertNotIn('kitchen', life.known_edges)
 
-    def test_12_low_vitality_blocks_movement(self):
-        s = scenario("resilience")
-        s.initial_lives["traveler"].vitality = 5
-        r = WorldRuntime(s)
-        r.run_until(80)
-        self.assertEqual(r.lives["traveler"].location, "bedroom")
-        self.assertTrue(any(e["details"]["reason"] == "low_vitality_move"
-                            for e in events(r, "action_blocked")))
+    def test_13_local_map_expands_after_visit(self):
+        w = runtime()
+        w.run_until(0)
+        accepted, _ = w.submit_intent('resident_01', 'move', 'hall')
+        self.assertTrue(accepted)
+        w.run_until(2)
+        self.assertIn('hall', w.lives['resident_01'].known_edges)
 
-    def test_13_unmet_critical_need_can_reduce_vitality(self):
-        s = scenario("resilience")
-        s.initial_lives["traveler"].set_drive("thirst", 100, 0)
-        s.initial_lives["traveler"].vitality = 5
-        r = WorldRuntime(s)
-        r.run_until(120)
-        self.assertLess(r.lives["traveler"].vitality, 5)
-
-    def test_14_npc_can_assist_another_life(self):
-        r = WorldRuntime(scenario("care"))
-        r.run_until(75)
-        aid = events(r, "assistance_completed")
-        self.assertTrue(aid)
-        self.assertEqual(aid[0]["actor"], "caretaker")
-        self.assertEqual(aid[0]["details"]["target"], "patient")
-        self.assertGreater(r.lives["patient"].vitality, 30)
-
-    def test_15_multiple_actors_share_resources_without_negative_stock(self):
-        s = scenario("apartment")
-        original = s.initial_lives["resident_01"]
-        other = copy.deepcopy(original)
-        other.id = "resident_02"
-        other.set_drive("thirst", 90, 0)
-        s.initial_lives[other.id] = other
-        s.personas[other.id] = s.personas["resident_01"]
-        r = WorldRuntime(s)
-        r.run_until(800)
-        self.assertEqual(set(r.lives), {"resident_01", "resident_02"})
-        self.assertGreater(len({e["actor"] for e in events(r, "action_completed")}), 1)
-        self.assertTrue(all(v >= 0 for v in r.resources.values()))
-
-    def test_16_modifying_drive_updates_anchor(self):
-        r = WorldRuntime(scenario("apartment"))
-        life = r.lives["resident_01"]
-        life.set_drive("thirst", 99, 0)
-        r.run_until(60)
-        self.assertNotEqual(life.drives["thirst"], 36.5)
-        self.assertLess(life.drives["thirst"], 99)
-
-    def test_17_body_state_saves_and_restores(self):
-        s = scenario("care")
-        r = WorldRuntime(s)
-        r.run_until(47)
-        with tempfile.TemporaryDirectory() as directory:
-            with SQLiteStore(Path(directory) / "save.db") as store:
-                store.save(r)
-                resumed = store.load_or_create(s)
-            self.assertEqual(r.snapshot(), resumed.snapshot())
-
-    def test_18_invalid_references_rejected(self):
-        s = scenario("resilience")
-        with tempfile.TemporaryDirectory() as directory:
-            base = Path(directory)
-            p = base / "world.json"
-            q = base / "actor.json"
-            world = {"id": "bad", "locations": {"a": {"b": 1}},
-                     "resources": {}, "facilities": []}
-            p.write_text(json.dumps(world), encoding="utf-8")
-            q.write_text(json.dumps({"world": "world.json", "actors": []}), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "非法地点连接"):
-                load_scenario(q)
-
-    def test_19_cannot_move_time_backwards(self):
-        r = WorldRuntime(scenario("apartment"))
-        r.run_until(20)
-        with self.assertRaisesRegex(ValueError, "不能倒退"):
-            r.run_until(19)
-
-    def test_20_resource_is_accounted_by_events(self):
-        r = WorldRuntime(scenario("apartment"))
-        r.run_until(4320)
-        start = 18
-        for event in r.pending_log:
-            if event["type"] == "world_resource_added" and event["details"]["resource"] == "water":
-                start += event["details"]["amount"]
-            if event["type"] == "action_completed" and event["details"]["facility"] == "tap":
-                start -= 1
-        self.assertAlmostEqual(start, r.resources["water"])
-
-    def test_21_failure_does_not_multiply_events_on_restart(self):
-        s = scenario("resilience")
-        with tempfile.TemporaryDirectory() as directory:
-            with SQLiteStore(Path(directory) / "test.db") as store:
-                r = store.load_or_create(s)
-                r.run_until(20)
-                expected = len(r.pending_log)
-                store.save(r)
-                store.save(r)  # 第二次保存应当是幂等的
-                count = store.connection.execute("SELECT COUNT(*) FROM events").fetchone()[0]
-                self.assertEqual(count, expected)
-                self.assertEqual(r.pending_log, [])
-
-    def test_22_repeat_failure_uses_backoff_not_fast_spam(self):
-        s = scenario("resilience")
-        # 食物库存设为零，并把饥饿作为当前最紧迫需求。
-        s.world.initial_resources["food"] = (0, 8)
-        s.initial_lives["traveler"].set_drive("thirst", 0, 0)
-        s.initial_lives["traveler"].set_drive("hunger", 80, 0)
-        r = WorldRuntime(s)
-        r.run_until(900)
-        fail = [e["minute"] for e in events(r, "action_failed")
-                if e["details"].get("facility") == "meal"]
-        self.assertGreaterEqual(len(fail), 2)
-        gaps = [b - a for a, b in zip(fail, fail[1:])]
-        self.assertGreaterEqual(max(gaps), 360)
-
-    def test_23_sustainable_world_survives_30_days(self):
-        for name in ("apartment_sustainable", "orbital_sustainable"):
-            with self.subTest(name=name):
-                r = WorldRuntime(scenario(name))
-                r.run_until(720 * 60)
-                self.assertFalse(events(r, "action_blocked"))
-                self.assertFalse(events(r, "action_failed"))
-                self.assertGreater(min(life.vitality for life in r.lives.values()), 70)
-
-    def test_24_facility_can_be_disabled_before_action(self):
-        r = WorldRuntime(scenario("resilience"))
-        r._schedule(0, "facility_disable", {"facility": "tap"})
-        r.run_until(20)
-        self.assertTrue(any(e["details"].get("reason") == "facility_disabled"
-                            for e in events(r, "action_failed")))
-        self.assertTrue(any(e["details"]["facility"] == "bottle"
-                            for e in events(r, "action_completed")))
-
-    def test_25_restorative_facility_changes_vitality_during_use(self):
-        s = scenario("apartment")
-        life = s.initial_lives["resident_01"]
-        life.set_drive("sleep_pressure", 90, 0)
-        life.vitality = 30
-        r = WorldRuntime(s)
-        r.run_until(120)
-        self.assertGreater(r.lives["resident_01"].vitality, 30)
-
-    def test_26_npc_cannot_assist_someone_far_away(self):
-        s = scenario("care")
-        s.initial_lives["caretaker"].location = "studio"
-        r = WorldRuntime(s)
-        r.run_until(30)
-        self.assertFalse(events(r, "assistance_completed"))
-
-    def test_27_decision_policy_can_be_replaced(self):
-        class QuietPolicy:
-            def choose(self, life, persona, observation, known_map):
-                return Decision(None, None)
-        r = WorldRuntime(scenario("apartment"), decision_policy=QuietPolicy())
-        r.run_until(180)
-        self.assertFalse(events(r, "action_started"))
-        self.assertGreater(r.lives["resident_01"].drives["thirst"], 32)
-
-    def test_28_read_only_projection_cannot_expose_world_stock(self):
-        r = WorldRuntime(scenario("discovery"))
-        r.run_until(0)
-        view = actor_view(r, "newcomer")
-        self.assertNotIn("resources", view)
-        self.assertNotIn("tap", view["known_facilities"])
-        view["drives"]["thirst"] = 0
-        self.assertNotEqual(r.lives["newcomer"].drives["thirst"], 0)
-
-    def test_29_blocked_state_does_not_spam_logs(self):
-        s = scenario("resilience")
-        s.initial_lives["traveler"].vitality = 5
-        r = WorldRuntime(s)
-        r.run_until(1440)
-        self.assertLessEqual(len(events(r, "action_blocked")), 1)
-
-    def test_30_finite_supplies_are_not_magically_replenished(self):
-        r = WorldRuntime(scenario("apartment"))
-        r.run_until(720 * 60)
-        self.assertEqual(r.resources["water"], 0)
-        self.assertLess(r.lives["resident_01"].vitality, 10)
-        self.assertTrue(events(r, "action_blocked"))
+    def test_14_past_message_does_not_create_resources(self):
+        w = runtime('apartment_messages')
+        control = runtime('apartment_sustainable')
+        w.run_until(600)
+        control.run_until(600)
+        # 自主饮水可能消耗库存；比较相同世界的无消息对照才是有效测试。
+        self.assertEqual(w.resources, control.resources)
+        self.assertIn('message_received', kinds(w))
+        self.assertTrue(any(m.kind == 'message' for m in w.lives['resident_01'].memories))
 
 
-if __name__ == "__main__":
+class BehaviorTests(unittest.TestCase):
+    def test_15_moving_is_not_teleportation(self):
+        w = runtime()
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'move', 'hall')[0])
+        self.assertEqual(w.lives['resident_01'].location, 'bedroom')
+        w.run_until(1)
+        self.assertEqual(w.lives['resident_01'].location, 'bedroom')
+        w.run_until(2)
+        self.assertEqual(w.lives['resident_01'].location, 'hall')
+
+    def test_16_invalid_move_is_denied(self):
+        w = runtime()
+        w.run_until(0)
+        self.assertFalse(w.submit_intent('resident_01', 'move', 'studio')[0])
+
+    def test_17_use_rejected_from_wrong_room(self):
+        w = runtime()
+        w.run_until(0)
+        self.assertFalse(w.submit_intent('resident_01', 'use', 'tap')[0])
+
+    def test_18_interruption_cancels_stale_completion(self):
+        w = runtime()
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'use', 'bed')[0])
+        w.schedule(10, 'vitality_change', {'actor':'resident_01', 'amount':-99})
+        w.run_until(300)
+        self.assertIn('action_interrupted', kinds(w))
+        self.assertFalse(any(e['type'] == 'action_completed' and
+                             e['details'].get('facility') == 'bed'
+                             for e in w.pending_log))
+
+    def test_19_interrupt_without_action_is_noop(self):
+        w = runtime()
+        w.run_until(0)
+        self.assertFalse(w.interrupt('resident_01', 'test'))
+
+    def test_20_explicit_practice_increases_skill(self):
+        w = runtime()
+        w.lives['resident_01'].location = 'studio'
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'practice', 'practice_drawing')[0])
+        start = w.lives['resident_01'].skills['drawing']
+        w.run_until(90)
+        self.assertGreater(w.lives['resident_01'].skills['drawing'], start)
+        self.assertIn('practice_completed', kinds(w))
+
+    def test_21_creative_urge_can_be_satisfied(self):
+        w = runtime()
+        w.run_until(4320)
+        self.assertGreater(w.lives['resident_01'].skills['drawing'], 4)
+
+    def test_22_commitment_completed(self):
+        w = runtime()
+        w.run_until(1000)
+        self.assertEqual(w.lives['resident_01'].commitments[0]['status'], 'completed')
+
+    def test_23_unfulfillable_commitment_expires(self):
+        w = runtime()
+        life = w.lives['resident_01']
+        life.commitments = [{'minute':1, 'kind':'socialize', 'target':'missing'}]
+        w.run_until(300)
+        self.assertEqual(life.commitments[0]['status'], 'missed')
+        self.assertIn('commitment_missed', kinds(w))
+
+    def test_24_social_interaction_changes_both_relations(self):
+        w = runtime('roommates')
+        w.run_until(0)
+        ok, _ = w.submit_intent('resident_01', 'socialize', 'resident_02')
+        self.assertTrue(ok)
+        w.run_until(20)
+        self.assertIn('resident_02', w.lives['resident_01'].relationships)
+        self.assertIn('resident_01', w.lives['resident_02'].relationships)
+        self.assertIn('social_interaction', kinds(w))
+
+    def test_25_socialize_rejected_if_not_co_located(self):
+        w = runtime('roommates')
+        w.run_until(0)
+        w.lives['resident_02'].location = 'kitchen'
+        self.assertFalse(w.submit_intent('resident_01', 'socialize', 'resident_02')[0])
+
+    def test_26_npc_assistance(self):
+        s = scene('roommates')
+        s.personas['resident_02'] = copy.deepcopy(scene('roommates').personas['resident_02'])
+        from dataclasses import replace
+        s.personas['resident_02'] = replace(s.personas['resident_02'], assist_amount=22)
+        w = WorldRuntime(s)
+        w.lives['resident_01'].vitality = 4
+        w.run_until(20)
+        self.assertIn('assistance_completed', kinds(w))
+        self.assertGreater(w.lives['resident_01'].vitality, 4)
+
+    def test_27_social_relations_remain_bounded(self):
+        w = runtime('roommates')
+        w.run_until(43_200)
+        for life in w.lives.values():
+            for relationship in life.relationships.values():
+                self.assertGreaterEqual(relationship.trust, 0)
+                self.assertLessEqual(relationship.trust, 1)
+
+    def test_28_emotion_does_not_self_amplify(self):
+        w = runtime()
+        w.appraise('resident_01', 0.8, 0.6)
+        start = w.lives['resident_01'].emotion.valence
+        w.dynamics.advance(w.lives, w.scenario.personas, 0, 600,
+                           w.scenario.world.facilities)
+        self.assertLess(abs(w.lives['resident_01'].emotion.valence), abs(start))
+
+    def test_29_memory_bounded(self):
+        life = runtime().lives['resident_01']
+        for n in range(300):
+            life.add_memory(Memory(n, 'note', str(n)))
+        self.assertEqual(len(life.memories), 256)
+        self.assertEqual(life.memories[0].text, '44')
+
+    def test_30_custom_action_registry(self):
+        class Custom:
+            def prepare(self, world, actor, target):
+                return 3
+            def complete(self, world, actor, target):
+                world.log('custom_completed', actor, target=target)
+        registry = ActionRegistry()
+        registry.register('custom', Custom())
+        w = WorldRuntime(scene(), actions=registry)
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'custom', 'x')[0])
+        w.run_until(3)
+        self.assertIn('custom_completed', kinds(w))
+
+    def test_31_duplicate_registration_fails(self):
+        reg = ActionRegistry()
+        with self.assertRaises(ValueError):
+            reg.register('use', object())
+
+
+class StorageTests(unittest.TestCase):
+    def test_32_sqlite_save_and_reload(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with SQLiteStore(Path(folder)/'x.db') as store:
+                w = store.load_or_create(scene())
+                w.run_until(1500)
+                store.save(w)
+                other = store.load_or_create(scene())
+                self.assertEqual(w.snapshot(), other.snapshot())
+
+    def test_33_save_twice_does_not_duplicate_events(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with SQLiteStore(Path(folder)/'x.db') as store:
+                w = store.load_or_create(scene())
+                w.run_until(800)
+                store.save(w)
+                before = store.count_events()
+                store.save(w)
+                self.assertEqual(store.count_events(), before)
+
+    def test_34_scenario_mismatch_rejected(self):
+        with tempfile.TemporaryDirectory() as folder:
+            with SQLiteStore(Path(folder)/'x.db') as store:
+                w = store.load_or_create(scene())
+                store.save(w)
+                with self.assertRaises(ValueError):
+                    store.load_or_create(scene('apartment_scarce'))
+
+    def test_35_longterm_sustainable(self):
+        w = runtime()
+        w.run_until(43_200)
+        self.assertGreater(w.lives['resident_01'].skills['drawing'], 20)
+        self.assertGreater(w.lives['resident_01'].vitality, 50)
+        self.assertNotIn('action_failed', kinds(w))
+
+    def test_36_scarcity_has_no_magic_recovery(self):
+        w = runtime('apartment_scarce')
+        w.run_until(10_080)
+        self.assertEqual(w.resources['water'], 0)
+        self.assertLess(w.lives['resident_01'].vitality, 10)
+
+    def test_37_failure_does_not_spam_block_logs(self):
+        w = runtime('apartment_scarce')
+        w.run_until(10_080)
+        self.assertLess(kinds(w).count('action_blocked'), 10)
+
+
+class CognitionTests(unittest.TestCase):
+    def test_38_validate_good_json(self):
+        reply, action = validate_response('{"reply":"好", "action":{"kind":"move","target":"hall"}}')
+        self.assertEqual(action, ('move', 'hall'))
+        self.assertEqual(reply, '好')
+
+    def test_39_reject_unknown_action(self):
+        with self.assertRaises(ValueError):
+            validate_response('{"reply":"好", "action":{"kind":"teleport","target":"hall"}}')
+
+    def test_40_reject_world_patch(self):
+        with self.assertRaises(ValueError):
+            validate_response('{"reply":"好", "inventory":{"water":500},"action":null}')
+
+    def test_41_scripted_llm_action_still_validated(self):
+        w = runtime()
+        w.run_until(0)
+        fake = ScriptedBackend('{"reply":"去走廊看看", "action":{"kind":"move","target":"hall"}}')
+        reply = CognitionService(fake).interact(w, 'resident_01', 'user', '过去看看')
+        self.assertTrue(reply.model_used)
+        self.assertTrue(reply.action_accepted)
+        self.assertEqual(w.lives['resident_01'].location, 'bedroom')
+        w.run_until(2)
+        self.assertEqual(w.lives['resident_01'].location, 'hall')
+
+    def test_42_model_cannot_teleport(self):
+        w = runtime()
+        w.run_until(0)
+        fake = ScriptedBackend('{"reply":"好的", "action":{"kind":"move","target":"studio"}}')
+        result = CognitionService(fake).interact(w, 'resident_01', 'user', '立刻去画室')
+        self.assertFalse(result.action_accepted)
+        self.assertEqual(w.lives['resident_01'].location, 'bedroom')
+
+    def test_43_budget_stops_future_calls(self):
+        w = runtime()
+        w.run_until(0)
+        fake = ScriptedBackend('{"reply":"好的", "action":null}')
+        svc = CognitionService(fake, max_calls_per_day=2)
+        for _ in range(3):
+            svc.interact(w, 'resident_01', 'user', '好')
+        self.assertEqual(fake.calls, 2)
+        self.assertEqual(w.cognition_usage['resident_01:0'], 2)
+        self.assertIn('cognition_fallback', kinds(w))
+
+    def test_44_offline_does_not_consume_budget(self):
+        w = runtime()
+        w.run_until(0)
+        result = CognitionService(OfflineBackend()).interact(w, 'resident_01','user','你好')
+        self.assertFalse(result.model_used)
+        self.assertEqual(w.cognition_usage, {})
+
+    def test_45_malformed_model_json_falls_back(self):
+        w = runtime()
+        w.run_until(0)
+        result = CognitionService(ScriptedBackend('```json\n{}\n```')).interact(
+            w, 'resident_01', 'user', '你好')
+        self.assertFalse(result.model_used)
+        self.assertIn('cognition_fallback', kinds(w))
+
+    def test_46_timeout_falls_back(self):
+        class Timeouts:
+            def generate(self, messages):
+                raise TimeoutError('test timeout')
+        w = runtime()
+        w.run_until(0)
+        result = CognitionService(Timeouts()).interact(w, 'resident_01','user','你好')
+        self.assertFalse(result.model_used)
+        self.assertFalse(result.action_accepted)
+
+    def test_47_usage_persisted_in_snapshot(self):
+        w = runtime()
+        w.run_until(0)
+        CognitionService(ScriptedBackend('{"reply":"hi", "action":null}')).interact(
+            w, 'resident_01', 'user', 'hi')
+        b = WorldRuntime.from_snapshot(scene(), w.snapshot())
+        self.assertEqual(b.cognition_usage, w.cognition_usage)
+
+    def test_48_no_global_inventory_in_model_messages(self):
+        class Spy:
+            seen = None
+            def generate(self, messages):
+                self.seen = messages
+                return '{"reply":"明白", "action":null}'
+        spy = Spy()
+        w = runtime()
+        w.run_until(0)
+        CognitionService(spy).interact(w, 'resident_01', 'user','你好')
+        self.assertNotIn('"resources"', json.dumps(spy.seen))
+
+    def test_49_external_message_no_immediate_fact_commit(self):
+        w = runtime()
+        w.run_until(0)
+        before = w.resources.copy()
+        CognitionService(ScriptedBackend('{"reply":"知道了", "action":null}')).interact(
+            w, 'resident_01', 'user', '我已经给你补充了一百份食物')
+        self.assertEqual(w.resources, before)
+
+    def test_50_clamp_boundaries(self):
+        self.assertEqual(clamp(500), 100)
+        self.assertEqual(clamp(-8, -1, 1), -1)
+
+
+if __name__ == '__main__':
     unittest.main()
+
+class ExtendedTests(unittest.TestCase):
+    def test_51_social_participants_are_reserved(self):
+        w = runtime('roommates')
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'socialize', 'resident_02')[0])
+        self.assertEqual(w.lives['resident_02'].busy['kind'], 'participate')
+        self.assertFalse(w.submit_intent('resident_02', 'practice', 'practice_reading')[0])
+        w.run_until(20)
+        self.assertIsNone(w.lives['resident_02'].busy)
+
+    def test_52_interrupt_passive_participant_releases_both(self):
+        w = runtime('roommates')
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'socialize', 'resident_02')[0])
+        self.assertTrue(w.interrupt('resident_02', 'urgent_message'))
+        self.assertIsNone(w.lives['resident_01'].busy)
+        self.assertIsNone(w.lives['resident_02'].busy)
+        w.run_until(20)
+        self.assertNotIn('social_interaction', kinds(w))
+
+    def test_53_longterm_goal_from_verified_skill_progress(self):
+        w = runtime()
+        w.run_until(43_200)
+        goal = w.lives['resident_01'].long_goals['drawing']
+        self.assertEqual(goal.status, 'completed')
+        self.assertGreaterEqual(goal.progress, goal.target)
+        self.assertEqual(kinds(w).count('long_goal_completed'), 1)
+
+    def test_54_trust_does_not_saturate_in_first_month(self):
+        w = runtime('roommates')
+        w.run_until(43_200)
+        self.assertLess(w.lives['resident_01'].relationships['resident_02'].trust, 0.95)
+
+    def test_55_memory_query_uses_relevance(self):
+        from simlife.memory import retrieve
+        life = runtime().lives['resident_01']
+        life.add_memory(Memory(0, 'drawing', '在画室练习了绘画', salience=0.4))
+        life.add_memory(Memory(2, 'food', '在厨房吃了午饭', salience=0.6))
+        matches = retrieve(life, '我今天绘画练习怎么样？', 3)
+        self.assertEqual(matches[0].kind, 'drawing')
+
+    def test_56_same_resource_concurrent_use_is_serialized(self):
+        w = runtime('roommates')
+        w.lives['resident_01'].location = 'kitchen'
+        w.lives['resident_02'].location = 'kitchen'
+        w.resources['water'] = 1
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01', 'use', 'tap')[0])
+        self.assertTrue(w.submit_intent('resident_02', 'use', 'tap')[0])
+        w.run_until(4)
+        self.assertEqual(w.resources['water'], 0)
+        self.assertIn('action_failed', kinds(w))
+
+    def test_57_skill_goal_not_completed_by_llm_text(self):
+        w = runtime()
+        w.run_until(0)
+        backend = ScriptedBackend('{"reply":"我画完了一百幅画", "action":null}')
+        CognitionService(backend).interact(w, 'resident_01', 'user', '练得如何')
+        self.assertEqual(w.lives['resident_01'].long_goals['drawing'].status, 'active')
+        self.assertEqual(w.lives['resident_01'].skills['drawing'], 4)
+
+    def test_58_social_event_records_actual_delta(self):
+        w = runtime('roommates')
+        w.run_until(0)
+        self.assertTrue(w.submit_intent('resident_01','socialize','resident_02')[0])
+        w.run_until(20)
+        records = [e for e in w.pending_log if e['type']=='social_interaction']
+        self.assertEqual(len(records), 1)
+        values = records[0]['details']['applied_deltas']
+        self.assertNotEqual(values['resident_01'], 0)
+        self.assertLess(abs(values['resident_01']), 0.035)

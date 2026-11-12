@@ -1,8 +1,0 @@
-t=  120 | goal_changed            | resident_01  | {"before": null, "after": "thirst"}
-t=  120 | action_started          | resident_01  | {"action": "move", "target": "hall", "goal": "thirst"}
-t=  122 | actor_moved             | resident_01  | {"location": "hall"}
-t=  122 | action_started          | resident_01  | {"action": "move", "target": "kitchen", "goal": "thirst"}
-t=  125 | actor_moved             | resident_01  | {"location": "kitchen"}
-t=  125 | action_started          | resident_01  | {"action": "use", "target": "tap", "goal": "thirst"}
-t=  129 | action_completed        | resident_01  | {"facility": "tap", "effects": {"thirst": -41.675}}
-t=  129 | goal_changed            | resident_01  | {"before": "thirst", "after": null}

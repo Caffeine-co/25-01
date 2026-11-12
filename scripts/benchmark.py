@@ -1,108 +1,82 @@
-"""不用第三方依赖，复现实验数据并生成可检查的 JSON/CSV/SQLite。"""
-from __future__ import annotations
+"""无需模型、网络或测试框架，自动运行多场景并导出原始数据。
 
+所有曲线来自引擎运行时的小时快照，不用事后插值编造数据。
+"""
+from __future__ import annotations
 import csv
 import json
-import sys
 from collections import Counter
 from pathlib import Path
+import sys
+# 直接执行 scripts/*.py 时自动定位项目根目录，无需先 pip install。
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from simlife.config import load_scenario
+from simlife.store import SQLiteStore
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-
-from simlife.config import load_scenario  # noqa: E402
-from simlife.engine import WorldRuntime  # noqa: E402
-from simlife.store import SQLiteStore  # noqa: E402
-
-SCENARIOS = ("apartment", "orbital", "resilience", "discovery", "care",
-             "apartment_sustainable", "orbital_sustainable")
-RESULTS = ROOT / "results"
+CASES = {
+    "apartment_sustainable": 720,
+    "apartment_scarce": 168,
+    "apartment_interrupt": 72,
+    "apartment_messages": 72,
+    "roommates": 720,
+}
 
 
-def experiment(name: str, hours: int, *, save_db: bool = True) -> dict:
-    world = load_scenario(ROOT / "examples" / "scenarios" / f"{name}.json")
-    run = WorldRuntime(world)
-    report_rows = []
-    min_vitality = {k: 100.0 for k in run.lives}
-    max_vitality = {k: 0.0 for k in run.lives}
-    extreme_samples = Counter()
-    for hour in range(1, hours + 1):
-        run.run_until(hour * 60)
-        for aid, life in run.lives.items():
-            min_vitality[aid] = min(min_vitality[aid], life.vitality)
-            max_vitality[aid] = max(max_vitality[aid], life.vitality)
-            for drive, value in life.drives.items():
-                if value >= 95:
-                    extreme_samples[f"{aid}.{drive}"] += 1
-            report_rows.append({
-                "minute": run.minute, "actor": aid, "location": life.location,
-                "vitality": life.vitality, "goal": life.goal or "",
-                "busy": life.busy["kind"] if life.busy else "",
-                "known_facilities": len(life.beliefs),
-                **{f"drive.{key}": value for key, value in life.drives.items()},
-            })
-
-    kinds = Counter(event["type"] for event in run.pending_log)
-    facilities = Counter(event["details"]["facility"] for event in run.pending_log
-                         if event["type"] == "action_completed")
-    fails = Counter(event["details"]["reason"] for event in run.pending_log
-                    if event["type"] in {"action_failed", "action_blocked"})
-    output = {
-        "scenario": name, "hours": hours, "minute": run.minute,
-        "world": world.world.id, "resources": run.resources,
-        "event_count": len(run.pending_log), "event_types": dict(sorted(kinds.items())),
-        "completed_facilities": dict(sorted(facilities.items())),
-        "failure_reasons": dict(sorted(fails.items())),
-        "min_vitality": min_vitality, "max_vitality": max_vitality,
-        "extreme_samples_by_drive": dict(sorted(extreme_samples.items())),
-        "end_lives": {aid: {
-            "location": life.location, "vitality": life.vitality,
-            "drives": life.drives, "goal": life.goal,
-            "busy": life.busy, "visited": life.visited,
-            "beliefs": {fid: {"last_result": fact.last_result, "last_seen": fact.last_seen}
-                        for fid, fact in life.beliefs.items()},
-        } for aid, life in run.lives.items()},
-        "consistency": {
-            "all_resources_nonnegative": all(value >= 0 for value in run.resources.values()),
-            "all_vitalities_in_range": all(0 <= life.vitality <= 100 for life in run.lives.values()),
-            "all_drive_values_in_range": all(0 <= v <= 100 for life in run.lives.values()
-                                             for v in life.drives.values()),
-        },
-    }
-    if save_db:
-        database = RESULTS / f"{name}_{hours}h.db"
-        # 每次基准测试都是全新世界；删除旧结果避免 events 表重复追加。
-        database.unlink(missing_ok=True)
-        with SQLiteStore(database) as store:
-            store.save(run)
-        if report_rows:
-            with (RESULTS / f"{name}_{hours}h_hourly.csv").open("w", newline="", encoding="utf-8-sig") as f:
-                fields = list(dict.fromkeys(k for row in report_rows for k in row))
-                writer = csv.DictWriter(f, fieldnames=fields)
-                writer.writeheader()
-                writer.writerows(report_rows)
-    return output
+def benchmark(name: str, hours: int) -> dict:
+    scenario = load_scenario(ROOT / "examples" / "scenarios" / f"{name}.json")
+    out = ROOT / "results"
+    out.mkdir(exist_ok=True)
+    db = out / f"{name}_{hours}h.db"
+    db.unlink(missing_ok=True)
+    hourly = []
+    with SQLiteStore(db) as store:
+        world = store.load_or_create(scenario)
+        for hour in range(hours + 1):
+            world.run_until(hour * 60)
+            for actor, life in sorted(world.lives.items()):
+                hourly.append({"hour": hour, "actor": actor, "location": life.location,
+                               "vitality": life.vitality, "goal": life.goal or "",
+                               "valence": life.emotion.valence,
+                               "arousal": life.emotion.arousal,
+                               "memory_count": len(life.memories),
+                               "skill_total": round(sum(life.skills.values()), 6),
+                               **{f"need_{k}": life.drives[k] for k in life.drives}})
+        store.save(world)
+        counts = store.count_events()
+    fields = sorted({key for row in hourly for key in row})
+    with (out / f"{name}_{hours}h_hourly.csv").open("w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(hourly)
+    life_info = {}
+    for actor, life in sorted(world.lives.items()):
+        rows = [row for row in hourly if row["actor"] == actor]
+        life_info[actor] = {
+            "end_vitality": life.vitality,
+            "min_vitality_hourly": min(row["vitality"] for row in rows),
+            "max_need_hourly": {k: max(row[f"need_{k}"] for row in rows)
+                                for k in life.drives},
+            "final_skills": life.skills,
+            "memories": len(life.memories),
+            "relationships": {k: {"trust": round(v.trust, 4), "interactions": v.interactions}
+                              for k, v in life.relationships.items()},
+            "commitments": life.commitments,
+        }
+    return {"scene": name, "hours": hours, "event_counts": counts,
+            "actors": life_info, "end_inventory": world.resources,
+            "hourly_rows": len(hourly)}
 
 
 def main() -> None:
-    RESULTS.mkdir(exist_ok=True, parents=True)
-    output: list[dict] = []
-    for name in SCENARIOS:
-        output.append(experiment(name, 72))
-    # 30 天运行不附完整数据库，避免示例工程体积膨胀。
-    for name in ("apartment", "orbital", "resilience", "care",
-                 "apartment_sustainable", "orbital_sustainable"):
-        output.append(experiment(name, 720, save_db=False))
-    (RESULTS / "summary.json").write_text(
-        json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    for item in output:
-        print(f"{item['scenario']:10} {item['hours']:4}h | events={item['event_count']:4} "
-              f"success={item['event_types'].get('action_completed', 0):3} "
-              f"failure={item['event_types'].get('action_failed', 0):3} "
-              f"blocked={item['event_types'].get('action_blocked', 0):3} "
-              f"min_vitality={min(item['min_vitality'].values()):.1f} "
-              f"resources={item['resources']}")
+    summary = {name: benchmark(name, hours) for name, hours in CASES.items()}
+    (ROOT / "results" / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps({name: {"hours": v["hours"], "counts": v["event_counts"],
+                                  "actors": {a: {"skills": item["final_skills"],
+                                                 "min_vitality": item["min_vitality_hourly"]}
+                                             for a, item in v["actors"].items()}}
+                      for name, v in summary.items()}, ensure_ascii=False, indent=2))
 
-
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
