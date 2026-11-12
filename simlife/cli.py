@@ -32,6 +32,8 @@ def main() -> None:
             print("Drives:", json.dumps({k: round(v, 2) for k, v in actor.drives.items()},
                                         ensure_ascii=False))
             print("Busy:", actor.busy)
+            print("Vitality:", round(actor.vitality, 2), "Goal:", actor.goal)
+            print("Known facilities:", list(actor.beliefs))
         print(f"Last {args.tail} events:")
         for minute, kind, aid, details in store.recent_events(args.tail):
             print(f"  t={minute:>5} | {kind:<22} | {aid or '-':<12} | {details}")

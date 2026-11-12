@@ -1,148 +1,117 @@
-# WorldLife Starter v0.1 — 可运行的跨世界观 World → Life 骨架
+# WorldLife v0.5 · 无 LLM 的世界与生命模拟实验
 
-这是一个 **无 LLM / 无 NoneBot / 无第三方运行时依赖** 的最小世界与生命模拟器。
+基于 `Caffeine-co/25-01` 的 `world-preview`（v0.1）继续开发。**核心仍是一个 Python 事件循环，不依赖 NoneBot、LLM、Pydantic 或第三方库。** 目标是验证角色在有限认知下可以做决定、遇到失败后调整行动，并且让世界独立结算实际后果。
 
-它用于验证：World 独立保存地点、资源和事件；Life 按自己的需求选择行动；World 负责执行、结算；发生的事件可以记录和恢复。
+> 这是**可运行、可重复测试的教学／研究原型**，不是通用的真实生命模拟器。`vitality` 与需求值都是 0–100 的游戏式抽象指标；不具备医学准确性，也不能据此推断人类健康状况。
 
-**当前不是完整的虚拟生命系统，更不是生物学或心理学仿真。** 内置动态模型是可替换的玩具级“需求缺口”模型，目的是先做出可靠的因果闭环，再细化行为与心理机制。
+## 1. 最快上手
 
-## 1. 环境与快速运行
-
-- Python 3.11+，无 pip 运行依赖。
-- 在本目录执行（Windows PowerShell 也可以）：
+Python **3.11+**，在工程根目录运行：
 
 ```powershell
-python -m simlife examples/scenarios/apartment.json --hours 72 --db data/apartment.db
-python -m simlife examples/scenarios/orbital.json --hours 72 --db data/orbital.db
-```
-
-命令会打印最后时刻的角色需求值、位置、库存及最近事件。
-
-**再次运行同一命令将从数据库中的世界时间继续推进 72 小时，而不是重新开始。** 想重跑实验应选择新 `--db` 文件。修改场景、World 或 Persona 后也需要新存档，否则会提示不匹配。
-
-运行测试：
-
-```powershell
+# 自动化验收（30 项）
 python -m unittest discover -s tests -v
+
+# 一个熟悉住所的普通角色，运行 72 小时（必须使用一个新 db）
+python -m simlife examples/scenarios/apartment.json --hours 72 --db data/my_apartment.db
+
+# 资源不足：先碰到空水龙头，再改用另一种水源
+python -m simlife examples/scenarios/resilience.json --hours 12 --db data/my_resilience.db
+
+# 不认识设施的探索者
+python -m simlife examples/scenarios/discovery.json --hours 12 --db data/my_discovery.db
+
+# 一个 NPC 在同一地点帮助低行动能力的角色
+python -m simlife examples/scenarios/care.json --hours 12 --db data/my_care.db
+
+# 定期补给的公寓，在 30 天内持续运行
+python -m simlife examples/scenarios/apartment_sustainable.json --hours 720 --db data/my_stable.db
+
+# 从头重新生成 72 小时与 30 天实验报告、CSV 和 SQLite
+python scripts/benchmark.py
 ```
 
-可选安装为本地 Python 包：
+**再次对同一个 `--db` 执行 `--hours 72`，是在原有世界时间上继续前进 72 小时。** 要从头运行，请换一个数据库文件。`results/` 内是已执行的实验输出，重新运行 `benchmark.py` 会覆盖这部分示例实验文件。
 
-```powershell
-python -m pip install -e .
-worldlife examples/scenarios/apartment.json --hours 72 --db data/apartment.db
-```
-
-所有文件均使用相对项目根目录的示例路径；命令应在项目根目录运行。
-
-## 2. 目录和职责
+## 2. 按真实执行顺序理解代码
 
 ```text
-worldlife_starter/
-├── pyproject.toml
-├── simlife/
-│   ├── model.py       # 世界、设施、角色、事件的数据类型
-│   ├── config.py      # 拼装场景，并验证世界与角色兼容性
-│   ├── systems.py     # 可替换的生理演化/决策/设施结算接口
-│   ├── policy.py      # 寻路与不依赖 LLM 的效用决策
-│   ├── engine.py      # 世界时间、事件队列、行为执行与结算
-│   ├── store.py       # SQLite 检查点 + 已结算事件（事务写入）
-│   ├── cli.py         # 运行入口
-│   └── __main__.py    # python -m simlife
-├── examples/
-│   ├── worlds/        # 不同世界的地点、设施、资源与外部事件
-│   ├── personas/      # 不依赖世界位置、剧情名词的生命需求配置
-│   └── scenarios/     # 世界与角色的组装：角色在哪里开始、知道哪些地点
-├── tests/
-│   └── test_simulation.py
-└── docs/
-    ├── BUILD_GUIDE.md # 请求/事件/状态流的逐步讲解
-    └── EXTENSIONS.md  # 如何接入 IP 特殊机制、NoneBot 和 LLM
+cli.main()
+  └─ config.load_scenario()           读取三个 JSON：世界/人设/角色装配
+      └─ SQLiteStore.load_or_create() 恢复或创建 WorldRuntime
+          └─ WorldRuntime.run_until()
+              ├─ Dynamics.advance()   根据时间演化需求与行动能力
+              ├─ _dispatch(decide)
+              │   ├─ observe()         仅观察当前地点
+              │   ├─ remember_observation() 更新设施记忆
+              │   └─ policy.choose()   保持目标/探索/选行动
+              ├─ _dispatch(move_finished) 移动成功才更新地点
+              ├─ _dispatch(use_finished)  检查资源并结算实际效果
+              └─ _dispatch(assist_finished) 简化 NPC 协助
+          └─ SQLiteStore.save()       原子保存检查点与事件日志
 ```
 
-## 3. 为什么这样才能跨 IP
+**建议第一份阅读材料：[docs/RUN_THROUGH.md](docs/RUN_THROUGH.md)**。它沿着 t=0 到第一次喝水，以及资源失败和 NPC 帮助的运行轨迹逐步解释每个调用。
 
-- `World` 文件只声明地点、设施、物资、外部事件，不假定人类、学校、城市或日历。
-- `Persona` 文件只定义内在需求及相对重要性，不写角色居住在哪个 IP 世界。
-- `Scenario` 文件把某个角色放进某个 World，设置已知地点。**同一 Persona 可以绑定多个兼容 World；一个 World 可以容纳多种 Persona。** 不兼容的资源/能力需要另行实现，而不是静默假装兼容。
-- 通用 `engine` 对 `actor_id`、`world_id`、`facility_id` 的名字没有业务假设。
-- `systems.py` 的三个接口允许替换内在动态规律、决策策略、行为结算规则，而不用改核心事件循环。
+## 3. 文件与职责
 
-随项目提供两个风格差异明显的配置：
+```text
+simlife/
+  model.py       数据结构：世界定义、角色状态、个人认知、行动意图
+  config.py      JSON 装配与输入校验
+  engine.py      世界时间、事件队列、行动执行（核心）
+  systems.py     可替换的自然演化、决策、行动结算规则
+  perception.py  当前地点可见内容 → 个体设施认知
+  policy.py      需求目标 → 已知设施/探索 → 下一步行动
+  projection.py  只读角色视图（供日后外部交互使用）
+  store.py       SQLite 存档与事件日志
+  cli.py         命令行启动
+examples/
+  worlds/        各个世界的地理、设施、资源和预设事件
+  personas/      个体需求、身体规则及简单协助能力
+  scenarios/     某世界中放入哪些角色、角色已知什么
+scripts/
+  benchmark.py   运行多场景基准并生成数据
+results/         已实际运行的 SQLite/CSV/JSON 结果
+  summary.json
+  *_72h.db
+  *_72h_hourly.csv
+  ...
+tests/
+  test_simulation.py
+ docs/
+  RUN_THROUGH.md
+  ARCHITECTURE.md
+  ITERATION_REPORT.md
+  EXTENSIONS.md
+```
 
-| 文件 | 生命需求 | 世界设施 |
+## 4. 本版真实新增了什么
+
+| 阶段 | 已实现的最小能力 | 未实现的部分 |
 |---|---|---|
-| apartment | thirst、hunger、sleep_pressure、fatigue、creative_urge | 水龙头、食物、床、工作台 |
-| orbital | power_deficit、thermal_load、information_need | 充电端口、冷却站、终端 |
+| v0.2 | 当前地点观察、有限设施知识、失败反馈、探索新地点 | 复杂感官、事实置信度和社会认知 |
+| v0.3 | 持续维持一个需求目标、逐段移动、失败后换目标设施 | 通用 GOAP、多层长期计划 |
+| v0.4 | `vitality`、持续风险损耗、行动阈值、休息中恢复 | 完整身体结构、疾病和医学模型 |
+| v0.5 | 独立 NPC、同地点协助、定时设施变化、重复资源补给 | 完整 NPC 社会、自由生成世界事件 |
+| 接口准备 | `actor_view()` 只读状态、可注入规则接口 | QQ/NoneBot/LLM 接入与真实外部消息 |
 
-跨 IP **不是**意味着给非人角色换个名字就能复用人类全部规则。不同 IP 可能需要魔力循环、重力、寿命、种族能力等不同模拟规则；需要专用 `Dynamics` / `FacilityResolver`，但不必改 World-LIfe 的因果调度核心。
+**不是 LLM 在写 World 状态。** Life 仅提交意图；资源、行动完成和跨角色协助必须由 `WorldRuntime` 实际执行并记录。角色的“知道”不等于世界客观存在。
 
-## 4. 一次最基本的状态循环
+## 5. 三件绝不能混淆的事情
 
-```text
-t=0  World 发出 decide 事件
-     ↓
-Life 根据自身需求和“已知地点”评估行动效用
-     ↓
-选中合适设施；若不在同一地点，先安排一段 move
-     ↓
-World 推进所需时间，其间所有 Life 的需求按规则持续变化
-     ↓
-移动完成 → 新位置生效 → 重新决策
-     ↓
-使用设施开始 → 经过执行时间
-     ↓
-World 检查位置和资源，扣减库存、改变需求、记录结果
-     ↓
-Life 再决策；若没必要做什么，30 分钟后重新评估
-```
+1. `WorldDefinition` 描述世界客观可用的规则、设施与地点；`LifeState.beliefs` 保存角色**认为**有哪些设施，可能过时。
+2. `goal` 是角色持续想解决的问题，例如 `thirst`；`busy` 是正在执行的具体动作，例如 `move`。一个动作失败不等于目标完成。
+3. `queue` 保存**未来待执行事件**；SQLite `events` 表保存**过去已发生的事件记录**；`checkpoint` 保存重启需要的完整现场。
 
-世界外部事件（例如资源补给）也进入**同一个事件队列**，即使角色暂时不行动也会执行。
+## 6. 验收结果（真实运行）
 
-## 5. 数据语义
+本版有 **30 项测试**。另跑过 7 个场景 × 72 小时，以及 6 个场景 × 30 天的实验。两种有明确周期补给的世界在 30 天内分别完成 168 与 119 次设施行动，**没有行动失败或行动能力阻断事件**；有限库存世界则会因为资源耗尽而出现真正的持续危机，系统不会凭空治愈或重置库存。具体见 [迭代报告](docs/ITERATION_REPORT.md) 与 [原始数据](results/summary.json)。
 
-需求值统一定义为“需求缺口”：0=满足，100=非常迫切。它们没有医学单位。
+## 7. 接下来在哪里扩展？
 
-- `initial`：初始缺口。
-- `rise_per_hour`：基础规则每小时增加多少缺口点；**不是**实际生理定律。
-- `threshold`：启动主动满足需求的参考阈值。
-- `priority`：该角色对这种需求的相对权重。
-- `effects`：设施使用成功后对各需求缺口施加的变化；负数意味着满足。
+- 增加新世界和新生命类型：先仿照 `examples/worlds/`、`personas/`、`scenarios/`。不同类型生命可用同一引擎。
+- 增加自定义世界规律：扩展 `Dynamics`、`DecisionPolicy` 或 `FacilityResolver`，详见 [docs/EXTENSIONS.md](docs/EXTENSIONS.md)。
+- 下一阶段真正有价值的改造：行动中断、目标进度与前置条件、可变空间知识、个体心理、动态 NPC 日程。不要急着重新加入旧版本的全部数值字段。
 
-`model.py` 将角色当前状态与角色配置拆开；修改角色的“生理参数”不直接覆盖其运行时已形成的状态。
-
-**不要**把派生出来的状态叙述反过来当作客观事实写入世界。后续 LLM 的文字只能成为表达或待验证的提案。
-
-## 6. 存档与回放
-
-SQLite 有两个表：
-
-- `checkpoint`：唯一权威运行时快照，含当前分钟、所有角色的需求、所在位置、正在执行的动作、世界库存、待处理事件队列和事件顺序号。
-- `events`：已经发生的动作与世界事件，用于调试和解释结果。
-
-两者在同一事务里提交。`run_until()` 只推进内存，不会自动保存；CLI 会在一次运行结束后保存。应用进程中应设置可靠的周期性检查点。
-
-当前引擎确定性运行，在相同配置和初始状态下，分段执行与一次性执行的世界状态一致。还没有引入随机源。
-
-> 如需与 QQ、邮件、真实 API 等外部动作衔接，必须额外实现 outbox、幂等执行和失败补偿。模拟事务**不能**让外部副作用跟 SQLite 自动原子提交。本版故意不发送任何现实消息。
-
-## 7. 当前已实现 / 未实现
-
-**已实现**：场景装配；不同世界和需求配置；地点图与寻路；世界共享资源；简单需求积分；效用选择；移动与设施使用；动作持续时间；预定世界资源事件；多 Actor 数据容器；SQLite 原子检查点及事件记录；存档继续；基本回归测试。
-
-**尚未实现**：完整人体生理、疾病、安全约束；真实生存损害和死亡判定；情绪、信念、记忆与主观感知；多步 GOAP 规划；被占用设施与复杂并发预留；NPC 对话与社会互动；复杂日历与世界时区；随机事件；NoneBot 桥接；LLM；真实外部动作 outbox；自动后台运行。
-
-不要把当前基础需求模型的正常运行误解为已经获得合理的生命表现。它是**架构与因果闭环验证器**。
-
-## 8. 推荐阅读顺序
-
-1. `examples/scenarios/apartment.json`：角色和世界如何组合。
-2. `examples/worlds/apartment.json`：World 如何声明“能做什么”。
-3. `examples/personas/artist.json`：Life 的需求和差异来自哪里。
-4. `simlife/model.py`：先理解类型，再看行为。
-5. `simlife/policy.py`：Life 选行为。
-6. `simlife/engine.py`：World 如何实际执行行为。
-7. `simlife/store.py`：重启后如何延续因果过程。
-8. `docs/BUILD_GUIDE.md`：逐步执行过程与测试。
-
-**这份 Starter 不是对现有 25:01 或 TempVirtualLife 的直接替换，也不会自动修改你的 GitHub 仓库。** 建议先作为独立实验工程跑通后，再按 `docs/EXTENSIONS.md` 将生命周期接入 NoneBot。
+**注意：旧 v0.1 的 SQLite 存档与本版不兼容。** 本版配置指纹含规则版本；必须用新 `--db` 开始模拟。这个设计是为了防止默默按照新规则解释旧状态。

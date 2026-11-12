@@ -1,0 +1,12 @@
+{
+  "world": "../worlds/resilience.json",
+  "actors": [
+    {
+      "id": "traveler",
+      "persona": "../personas/explorer.json",
+      "start_location": "bedroom",
+      "known_locations": ["bedroom", "hall", "kitchen", "storage"],
+      "known_facilities": ["tap", "bottle", "meal"]
+    }
+  ]
+}

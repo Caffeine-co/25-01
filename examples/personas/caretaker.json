@@ -1,0 +1,17 @@
+{
+  "id": "helpful_caretaker",
+  "move_multiplier": 1.0,
+  "assist_amount": 22,
+  "assist_duration": 15,
+  "assist_threshold": 30,
+  "drives": {
+    "thirst": {"initial": 15, "rise_per_hour": 4, "threshold": 40, "priority": 3},
+    "hunger": {"initial": 20, "rise_per_hour": 3, "threshold": 45, "priority": 2},
+    "sleep_pressure": {"initial": 20, "rise_per_hour": 2, "threshold": 60, "priority": 2}
+  },
+  "body": {
+    "initial_vitality": 90,
+    "idle_recovery_per_hour": 0.2,
+    "critical_drives": {"thirst": [92, 2]}
+  }
+}
