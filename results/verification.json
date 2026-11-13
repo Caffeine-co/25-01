@@ -2,7 +2,7 @@
   "unit_tests": {
     "exit_code": 0,
     "command": "/opt/pyvenv/bin/python -m unittest discover -s tests -v",
-    "tail": "test_12_knowledge_is_local (test_simulation.WorldTests.test_12_knowledge_is_local) ... ok\ntest_13_local_map_expands_after_visit (test_simulation.WorldTests.test_13_local_map_expands_after_visit) ... ok\ntest_14_past_message_does_not_create_resources (test_simulation.WorldTests.test_14_past_message_does_not_create_resources) ... ok\n\n----------------------------------------------------------------------\nRan 58 tests in 1.937s\n\nOK"
+    "tail": "test_12_knowledge_is_local (test_simulation.WorldTests.test_12_knowledge_is_local) ... ok\ntest_13_local_map_expands_after_visit (test_simulation.WorldTests.test_13_local_map_expands_after_visit) ... ok\ntest_14_past_message_does_not_create_resources (test_simulation.WorldTests.test_14_past_message_does_not_create_resources) ... ok\n\n----------------------------------------------------------------------\nRan 109 tests in 10.332s\n\nOK"
   },
   "benchmarks": {
     "exit_code": 0,
@@ -13,6 +13,16 @@
     "exit_code": 0,
     "command": "/opt/pyvenv/bin/python scripts/stress.py",
     "tail": "PASS 30 deterministic replay stress tests, 7 simulated days per seed\nEvents: {'goal_changed': 1802, 'action_started': 2868, 'actor_moved': 1664, 'action_completed': 936, 'practice_completed': 293, 'commitment_completed': 13, 'world_resource_added': 420, 'world_facility_changed': 139, 'world_vitality_changed': 64, 'message_received': 67, 'social_interaction': 49, 'action_failed': 210, 'commitment_missed': 2, 'action_blocked': 26}"
+  },
+  "production_benchmark": {
+    "exit_code": 0,
+    "command": "/opt/pyvenv/bin/python scripts/production_benchmark.py",
+    "tail": "art_project                   7d   336 events 0.0767s / 1 projects\nart_project_disrupted         7d   344 events 0.0884s / 1 projects\napartment_with_knowledge      7d   325 events 0.0723s / 0 projects\napartment_sustainable        30d  1356 events 0.3917s / 0 projects\nroommates                    30d  2670 events 0.5785s / 0 projects\napartment_scarce              7d    90 events 0.0608s / 0 projects\nSTRESS {'seeds': 60, 'days_per_seed': 7, 'split_equal': 60, 'completed': 60, 'failed': 0, 'event_range': [322, 368], 'project_failure_range': [1, 2]}\nwrote /mnt/data/WorldLife-Production/WorldLife-next/results/v2/metrics.json"
+  },
+  "server_smoke": {
+    "exit_code": 0,
+    "command": "/opt/pyvenv/bin/python scripts/smoke_server.py",
+    "tail": "PASS: subprocess server / authenticated HTTP / idempotent retry / restart persistence"
   },
   "compile": {
     "exit_code": 0,

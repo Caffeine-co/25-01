@@ -1,0 +1,59 @@
+{
+  "world": "../worlds/apartment_disrupted.json",
+  "actors": [
+    {
+      "id": "resident_01",
+      "persona": "../personas/artist.json",
+      "start_location": "bedroom",
+      "known_locations": [
+        "bedroom",
+        "hall",
+        "kitchen",
+        "studio"
+      ],
+      "known_facilities": [
+        "bed",
+        "tap",
+        "meal",
+        "practice_drawing",
+        "practice_reading"
+      ],
+      "commitments": [
+        {
+          "minute": 720,
+          "kind": "practice",
+          "target": "practice_drawing"
+        }
+      ],
+      "skills": {
+        "drawing": 4
+      },
+      "projects": [
+        {
+          "id": "art_portfolio",
+          "priority": 0.9,
+          "start_minute": 0,
+          "deadline": 10080,
+          "steps": [
+            {
+              "kind": "practice",
+              "target": "practice_drawing"
+            },
+            {
+              "kind": "practice",
+              "target": "practice_drawing"
+            },
+            {
+              "kind": "practice",
+              "target": "practice_drawing"
+            },
+            {
+              "kind": "practice",
+              "target": "practice_drawing"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

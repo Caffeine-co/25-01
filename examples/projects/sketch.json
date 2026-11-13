@@ -1,0 +1,10 @@
+{
+  "id": "draw_four_sketches",
+  "priority": 0.85,
+  "steps": [
+    {"kind": "practice", "target": "practice_drawing"},
+    {"kind": "practice", "target": "practice_drawing"},
+    {"kind": "practice", "target": "practice_drawing"},
+    {"kind": "practice", "target": "practice_drawing"}
+  ]
+}

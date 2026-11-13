@@ -2,7 +2,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .planning import Project
+    from .knowledge import BeliefRecord
 
 
 def clamp(value: float, low: float = 0, high: float = 100) -> float:
@@ -153,6 +157,8 @@ class LifeState:
     facts: dict[str, dict[str, Any]] = field(default_factory=dict)
     known_edges: dict[str, dict[str, int]] = field(default_factory=dict)
     long_goals: dict[str, LongGoal] = field(default_factory=dict)
+    projects: dict[str, Project] = field(default_factory=dict)
+    propositions: dict[str, BeliefRecord] = field(default_factory=dict)
 
     def set_drive(self, name: str, value: float, minute: int) -> None:
         self.drives[name] = clamp(value)
@@ -176,6 +182,11 @@ class LifeState:
         value["relationships"] = {k: Relationship(**v) for k, v in value.get("relationships", {}).items()}
         value["memories"] = [Memory(**m) for m in value.get("memories", [])]
         value["long_goals"] = {k: LongGoal(**v) for k, v in value.get("long_goals", {}).items()}
+        from .planning import Project, ProjectStep
+        value["projects"] = {k: Project(**{**v, "steps": [ProjectStep(**step) for step in v["steps"]]})
+                             for k, v in value.get("projects", {}).items()}
+        from .knowledge import BeliefRecord
+        value["propositions"] = {k: BeliefRecord(**v) for k, v in value.get("propositions", {}).items()}
         return cls(**value)
 
 

@@ -1,0 +1,409 @@
+{
+  "version": "2.0",
+  "scenarios": {
+    "art_project": {
+      "days": 7,
+      "event_counts": {
+        "goal_changed": 72,
+        "action_started": 114,
+        "actor_moved": 70,
+        "action_completed": 43,
+        "practice_completed": 17,
+        "project_step_completed": 4,
+        "project_completed": 1,
+        "commitment_completed": 1,
+        "world_resource_added": 14
+      },
+      "event_total": 336,
+      "resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "actors": {
+        "resident_01": {
+          "vitality": 100,
+          "location": "bedroom",
+          "goal": "sleep_pressure",
+          "drives": {
+            "thirst": 48.51333333,
+            "hunger": 17.125,
+            "sleep_pressure": 71.4,
+            "fatigue": 46.00166667,
+            "creative_urge": 3.81333333
+          },
+          "skills": {
+            "drawing": 19.3821229
+          },
+          "emotion": {
+            "valence": 0.19351769,
+            "arousal": 0.19816684
+          },
+          "memory_count": 18,
+          "projects": {
+            "art_portfolio": {
+              "status": "completed",
+              "step": 4,
+              "failures": 0,
+              "completed_at": 614,
+              "evidence": [
+                {
+                  "minute": 344,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 0
+                },
+                {
+                  "minute": 434,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 1
+                },
+                {
+                  "minute": 524,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 2
+                },
+                {
+                  "minute": 614,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 3
+                }
+              ]
+            }
+          },
+          "beliefs": {},
+          "relations": {}
+        }
+      },
+      "elapsed_seconds": 0.0767
+    },
+    "art_project_disrupted": {
+      "days": 7,
+      "event_counts": {
+        "goal_changed": 74,
+        "action_started": 115,
+        "actor_moved": 68,
+        "action_completed": 43,
+        "world_facility_changed": 2,
+        "action_failed": 3,
+        "project_step_failed": 2,
+        "commitment_completed": 1,
+        "practice_completed": 17,
+        "project_step_completed": 4,
+        "world_resource_added": 14,
+        "project_completed": 1
+      },
+      "event_total": 344,
+      "resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "actors": {
+        "resident_01": {
+          "vitality": 100,
+          "location": "bedroom",
+          "goal": "sleep_pressure",
+          "drives": {
+            "thirst": 50.41333333,
+            "hunger": 17.125,
+            "sleep_pressure": 71.4,
+            "fatigue": 46.00166667,
+            "creative_urge": 3.81333333
+          },
+          "skills": {
+            "drawing": 19.3821229
+          },
+          "emotion": {
+            "valence": 0.19349391,
+            "arousal": 0.19803963
+          },
+          "memory_count": 21,
+          "projects": {
+            "art_portfolio": {
+              "status": "completed",
+              "step": 4,
+              "failures": 0,
+              "completed_at": 1567,
+              "evidence": [
+                {
+                  "minute": 1039,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 0
+                },
+                {
+                  "minute": 1387,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 1
+                },
+                {
+                  "minute": 1477,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 2
+                },
+                {
+                  "minute": 1567,
+                  "kind": "practice",
+                  "target": "practice_drawing",
+                  "step": 3
+                }
+              ]
+            }
+          },
+          "beliefs": {},
+          "relations": {}
+        }
+      },
+      "elapsed_seconds": 0.0884
+    },
+    "apartment_with_knowledge": {
+      "days": 7,
+      "event_counts": {
+        "belief_evidence": 2,
+        "goal_changed": 73,
+        "action_started": 111,
+        "actor_moved": 70,
+        "action_completed": 40,
+        "practice_completed": 14,
+        "commitment_completed": 1,
+        "world_resource_added": 14
+      },
+      "event_total": 325,
+      "resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "actors": {
+        "resident_01": {
+          "vitality": 100,
+          "location": "bedroom",
+          "goal": "sleep_pressure",
+          "drives": {
+            "thirst": 48.51333333,
+            "hunger": 17.125,
+            "sleep_pressure": 71.4,
+            "fatigue": 46.00166667,
+            "creative_urge": 3.81333333
+          },
+          "skills": {
+            "drawing": 16.82416221
+          },
+          "emotion": {
+            "valence": 0.19330616,
+            "arousal": 0.1981602
+          },
+          "memory_count": 14,
+          "projects": {},
+          "beliefs": {
+            "meeting_place": {
+              "value": "kitchen",
+              "confidence": 1.0,
+              "source": "world_observation",
+              "history": [
+                {
+                  "value": "studio",
+                  "confidence": 1.0,
+                  "source": "world_observation",
+                  "source_id": "world:3",
+                  "minute": 120
+                },
+                {
+                  "value": "kitchen",
+                  "confidence": 1.0,
+                  "source": "world_observation",
+                  "source_id": "world:4",
+                  "minute": 600
+                }
+              ]
+            }
+          },
+          "relations": {}
+        }
+      },
+      "elapsed_seconds": 0.0723
+    },
+    "apartment_sustainable": {
+      "days": 30,
+      "event_counts": {
+        "goal_changed": 311,
+        "action_started": 462,
+        "actor_moved": 288,
+        "action_completed": 174,
+        "practice_completed": 59,
+        "commitment_completed": 1,
+        "world_resource_added": 60,
+        "long_goal_completed": 1
+      },
+      "event_total": 1356,
+      "resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "actors": {
+        "resident_01": {
+          "vitality": 100,
+          "location": "kitchen",
+          "goal": null,
+          "drives": {
+            "thirst": 13.11,
+            "hunger": 26.70833333,
+            "sleep_pressure": 48.99999999,
+            "fatigue": 30.25833334,
+            "creative_urge": 3.68
+          },
+          "skills": {
+            "drawing": 49.19968427
+          },
+          "emotion": {
+            "valence": 0.19166063,
+            "arousal": 0.19698106
+          },
+          "memory_count": 60,
+          "projects": {},
+          "beliefs": {},
+          "relations": {}
+        }
+      },
+      "elapsed_seconds": 0.3917
+    },
+    "roommates": {
+      "days": 30,
+      "event_counts": {
+        "goal_changed": 634,
+        "action_started": 928,
+        "actor_moved": 554,
+        "action_completed": 345,
+        "practice_completed": 118,
+        "social_interaction": 29,
+        "world_resource_added": 60,
+        "long_goal_completed": 2
+      },
+      "event_total": 2670,
+      "resources": {
+        "water": 40.0,
+        "food": 30.0
+      },
+      "actors": {
+        "resident_01": {
+          "vitality": 100,
+          "location": "kitchen",
+          "goal": null,
+          "drives": {
+            "thirst": 13.74333333,
+            "hunger": 27.125,
+            "sleep_pressure": 48.99999999,
+            "fatigue": 30.25833333,
+            "creative_urge": 3.41333333
+          },
+          "skills": {
+            "drawing": 47.97898913
+          },
+          "emotion": {
+            "valence": 0.22825983,
+            "arousal": 0.26792679
+          },
+          "memory_count": 89,
+          "projects": {},
+          "beliefs": {},
+          "relations": {
+            "resident_02": {
+              "trust": 0.75140057,
+              "interactions": 29
+            }
+          }
+        },
+        "resident_02": {
+          "vitality": 100,
+          "location": "studio",
+          "goal": null,
+          "drives": {
+            "thirst": 30.64833333,
+            "hunger": 22.44,
+            "sleep_pressure": 60.00000001,
+            "fatigue": 29.04
+          },
+          "skills": {
+            "reading": 48.5893367
+          },
+          "emotion": {
+            "valence": 0.22191509,
+            "arousal": 0.2573055
+          },
+          "memory_count": 89,
+          "projects": {},
+          "beliefs": {},
+          "relations": {
+            "resident_01": {
+              "trust": 0.75140057,
+              "interactions": 29
+            }
+          }
+        }
+      },
+      "elapsed_seconds": 0.5785
+    },
+    "apartment_scarce": {
+      "days": 7,
+      "event_counts": {
+        "goal_changed": 16,
+        "action_started": 34,
+        "actor_moved": 18,
+        "action_completed": 9,
+        "world_facility_changed": 2,
+        "practice_completed": 3,
+        "action_failed": 7,
+        "action_blocked": 1
+      },
+      "event_total": 90,
+      "resources": {
+        "water": 0.0,
+        "food": 0.0
+      },
+      "actors": {
+        "resident_01": {
+          "vitality": 0,
+          "location": "kitchen",
+          "goal": "thirst",
+          "drives": {
+            "thirst": 100,
+            "hunger": 100,
+            "sleep_pressure": 100,
+            "fatigue": 100,
+            "creative_urge": 99.49333333
+          },
+          "skills": {
+            "drawing": 2.97506945
+          },
+          "emotion": {
+            "valence": -0.00209044,
+            "arousal": 0.00061931
+          },
+          "memory_count": 10,
+          "projects": {},
+          "beliefs": {},
+          "relations": {}
+        }
+      },
+      "elapsed_seconds": 0.0608
+    }
+  },
+  "stress": {
+    "seeds": 60,
+    "days_per_seed": 7,
+    "split_equal": 60,
+    "completed": 60,
+    "failed": 0,
+    "event_range": [
+      322,
+      368
+    ],
+    "project_failure_range": [
+      1,
+      2
+    ]
+  }
+}

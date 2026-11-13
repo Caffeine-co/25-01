@@ -31,7 +31,7 @@ class ActionPlan:
 
 class ActionHandler(Protocol):
     def prepare(self, world: "WorldRuntime", actor: str, target: str) -> int | ActionPlan: ...
-    def complete(self, world: "WorldRuntime", actor: str, target: str) -> None: ...
+    def complete(self, world: "WorldRuntime", actor: str, target: str) -> bool | None: ...
 
 
 @dataclass
@@ -57,6 +57,8 @@ class Move:
         else:
             life.location = target
             world.log("actor_moved", actor, location=target)
+            return True
+        return False
 
 
 @dataclass
@@ -92,7 +94,7 @@ class UseFacility:
             life.beliefs[target].last_used = world.minute
         if not ok:
             world.on_action_failure(actor, target, reason)
-            return
+            return False
         life.failed_until.pop(target, None)
         life.failure_counts.pop(target, None)
         if self.practice:
@@ -120,6 +122,7 @@ class UseFacility:
                       before=round(before, 4), after=life.skills[skill], facility=target)
         world.log("action_completed", actor, action="practice" if self.practice else "use",
                   facility=target, effects=effects)
+        return True
 
 
 @dataclass
@@ -152,6 +155,8 @@ class Assist:
             world.shift_relationship(target, actor, +0.07)
             if other.busy is None:
                 world.wake(target)
+            return True
+        return False
 
 
 @dataclass
@@ -171,7 +176,7 @@ class Socialize:
         life, other = world.lives[actor], world.lives[target]
         if life.location != other.location:
             world.log("action_failed", actor, action="socialize", reason="target_left")
-            return
+            return False
         # 固定种子的可重放分歧。不是心理真实性模型；避免每次社交无条件增进好感。
         import hashlib
         key = f"{world.minute}:{actor}:{target}".encode()
@@ -193,6 +198,7 @@ class Socialize:
                   nominal_relation_delta=delta, applied_deltas=applied_deltas)
         if other.busy is None:
             world.wake(target)
+        return True
 
 
 class ActionRegistry:

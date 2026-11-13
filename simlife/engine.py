@@ -10,6 +10,8 @@ from .perception import observe, remember_observation
 from .systems import (DecisionPolicy, Dynamics, FacilityResolver, HomeostasisDynamics,
                       StandardFacilityResolver)
 from .policy import StandardDecisionPolicy
+from .planning import Project, project_intent, validate_project
+from .knowledge import observe_belief
 
 
 class WorldRuntime:
@@ -45,7 +47,7 @@ class WorldRuntime:
             life.decision_ticket += 1
             payload = {**payload, "ticket": life.decision_ticket}
         priority = (0 if kind in {"resource_add", "facility_disable", "facility_enable",
-                                  "vitality_change", "message"}
+                                  "vitality_change", "message", "knowledge_signal"}
                     else 1 if kind == "action_complete"
                     else 2 if kind == "decide" else -1)
         if priority == -1:
@@ -148,6 +150,10 @@ class WorldRuntime:
                 self.wake(life.id)
             elif life.vitality < self.scenario.personas[life.id].body.min_use_vitality:
                 self.interrupt(life.id, reason="low_vitality")
+        elif kind == "knowledge_signal":
+            self.learn(payload["actor"], payload["key"], payload["value"],
+                       source="world_observation", confidence=float(payload.get("confidence", 1.0)),
+                       source_id=f"world:{event.sequence}")
         elif kind == "message":
             actor, author, txt = payload["actor"], str(payload.get("from", "system")), str(payload["text"])
             self.remember(actor, "message", f"{author} 发来消息：{txt}", 0.8, [author])
@@ -181,17 +187,34 @@ class WorldRuntime:
                 task["status"] = "missed"
                 self.remember(actor, "commitment_missed", f"未能完成约定：{task['kind']} {task['target']}", 0.7)
                 self.log("commitment_missed", actor, commitment_kind=task["kind"], target=task["target"])
+        # 项目由现实中的已完成动作驱动，期限过期必须有确定的结果。
+        for project in life.projects.values():
+            if project.status == "active" and project.deadline is not None and self.minute > project.deadline:
+                project.status = "failed"
+                self.log("project_failed", actor, project=project.id, reason="deadline")
         decision = self.decision_policy.choose(life, self.scenario.personas[actor], observation,
                                                life.known_edges)
+        project_id = None
+        # 生存需求可以打断项目；否则让长期项目真正进入决策循环。
+        if decision.goal not in self.scenario.personas[actor].drives:
+            project, project_action = project_intent(life, observation)
+            if project is not None and project_action is not None:
+                project_id = project.id
+                if project_action.kind == "arrived":
+                    self._complete_project_step(actor, project.id, "move", project_action.target)
+                    self.wake(actor)
+                    return
+                decision = type(decision)("project:" + project.id, project_action)
         if life.goal != decision.goal:
             self.log("goal_changed", actor, before=life.goal, after=decision.goal)
             life.goal, life.goal_since = decision.goal, self.minute
         if decision.action is None:
             self.wake(actor, self.minute + 30)
             return
-        self._start_action(actor, decision.action.kind, decision.action.target)
+        self._start_action(actor, decision.action.kind, decision.action.target, project_id=project_id)
 
-    def _start_action(self, actor: str, kind: str, target: str) -> None:
+    def _start_action(self, actor: str, kind: str, target: str,
+                      *, project_id: str | None = None) -> tuple[bool, str]:
         life = self.lives[actor]
         if life.busy:
             raise ValueError("角色已经在进行行动")
@@ -211,12 +234,14 @@ class WorldRuntime:
                 self.log("action_blocked", actor, action=kind, reason=ex.reason)
                 life.blocked_reason = ex.reason
             self.wake(actor, self.minute + 180)
-            return
+            if project_id is not None:
+                self._project_failure(actor, project_id, ex.reason)
+            return False, ex.reason
         life.blocked_reason = None
         life.action_ticket += 1
         life.busy = {"kind": kind, "target": target,
                      "finish": self.minute + duration, "ticket": life.action_ticket,
-                     "participants": list(participants)}
+                     "participants": list(participants), "project": project_id}
         # 多人行动统一占用参与者，避免对话中途一人突然跑去做别的事。
         for peer in participants:
             self.lives[peer].action_ticket += 1
@@ -226,7 +251,9 @@ class WorldRuntime:
                 "ticket": self.lives[peer].action_ticket}
         self.schedule(self.minute + duration, "action_complete", {
             "actor": actor, "kind": kind, "target": target, "ticket": life.action_ticket})
-        self.log("action_started", actor, action=kind, target=target, goal=life.goal, participants=list(participants))
+        self.log("action_started", actor, action=kind, target=target, goal=life.goal,
+                 project=project_id, participants=list(participants))
+        return True, "accepted"
 
     def _finish_action(self, payload: dict[str, Any]) -> None:
         actor = payload["actor"]
@@ -238,8 +265,16 @@ class WorldRuntime:
         handler = self.actions.get(payload["kind"])
         # 清除 busy 在结算之后；确保动作与结算时间形成原子逻辑段。
         participants = list(life.busy.get("participants", []))
+        project_id = life.busy.get("project")
+        success = False
         try:
-            handler.complete(self, actor, payload["target"])
+            outcome = handler.complete(self, actor, payload["target"])
+            success = outcome is not False  # 自定义旧 handler 无返回值视为成功。
+            if project_id:
+                if success:
+                    self._complete_project_step(actor, project_id, payload["kind"], payload["target"])
+                else:
+                    self._project_failure(actor, project_id, "action_failed")
         finally:
             life.busy = None
             for peer in participants:
@@ -267,6 +302,8 @@ class WorldRuntime:
                 other.action_ticket += 1
                 self.wake(peer)
         self.log("action_interrupted", actor, action=old["kind"], target=old["target"], reason=reason)
+        if old.get("project"):
+            self._project_failure(actor, old["project"], "interrupted:" + reason)
         self.remember(actor, "interruption", f"{old['kind']} 被 {reason} 打断", 0.55)
         self.wake(actor)
         return True
@@ -289,16 +326,113 @@ class WorldRuntime:
 
     def submit_intent(self, actor: str, kind: str, target: str) -> tuple[bool, str]:
         """外部认知只能通过这个受控入口提出行动，不能直接改世界。"""
+        if actor not in self.lives:
+            return False, "unknown_actor"
         if self.lives[actor].busy:
             self.log("cognition_action_denied", actor, reason="actor_busy")
             return False, "actor_busy"
-        try:
-            self.actions.get(kind).prepare(self, actor, target)
-        except ActionRejected as error:
-            self.log("cognition_action_denied", actor, reason=error.reason)
-            return False, error.reason
-        self._start_action(actor, kind, target)
-        return True, "accepted"
+        if kind in {"use", "practice"} and target not in self.lives[actor].beliefs:
+            self.log("cognition_action_denied", actor, reason="unknown_facility")
+            return False, "unknown_facility"
+        if kind == "move" and target not in self.lives[actor].known_edges.get(
+                self.lives[actor].location, {}):
+            self.log("cognition_action_denied", actor, reason="unknown_route")
+            return False, "unknown_route"
+        # 不在这里预检后就宣布成功：多人占用、运行时准备条件必须
+        # 以 _start_action 的最终结果为准，否则 LLM 会收到虚假的接受回执。
+        accepted, reason = self._start_action(actor, kind, target)
+        if not accepted:
+            self.log("cognition_action_denied", actor, reason=reason)
+        return accepted, reason
+
+    def learn(self, actor: str, key: str, value: Any, *, source: str = "external_claim",
+              confidence: float = 0.4, source_id: str | None = None) -> str:
+        """录入人物收到的证据。非 world_observation 只是说法，绝不修改现实。"""
+        if actor not in self.lives or not key or len(key) > 128:
+            raise ValueError("人物或命题 key 非法")
+        if source == "world_observation" and (source_id is None or not source_id.startswith("world:")):
+            raise ValueError("直接观察只能由世界事件引擎提供")
+        if source != "world_observation" and source_id is not None and source_id.startswith("world:"):
+            raise ValueError("外部证据不能冒用世界事件来源")
+        life = self.lives[actor]
+        # 未认证的 API 调用不得冒充世界直接观察。
+        if len(life.propositions) >= 300 and key not in life.propositions:
+            raise ValueError("人物信念数量已达到上限")
+        if source_id is None:
+            source_id = f"claim:{self.minute}:{self.sequence}:{len(life.propositions)}"
+            self.sequence += 1
+        old = life.propositions.get(key)
+        updated, status = observe_belief(old, value=value, source=source,
+                                         source_id=source_id, confidence=confidence,
+                                         minute=self.minute)
+        life.propositions[key] = updated
+        if status != "duplicate":
+            self.log("belief_evidence", actor, key=key, status=status, source=source,
+                     confidence=round(updated.confidence, 4))
+        return status
+
+    def add_project(self, actor: str, project: Project) -> None:
+        """正式的项目入口：管理员/认知服务只能添加经过验证的步骤。"""
+        from copy import deepcopy
+        validate_project(project, actor, set(self.lives),
+                         set(self.scenario.world.facilities), set(self.scenario.world.connections))
+        life = self.lives[actor]
+        if project.id in life.projects:
+            raise ValueError("项目 id 已存在")
+        if len(life.projects) >= 40:
+            raise ValueError("每个人物最多保留 40 个项目")
+        life.projects[project.id] = deepcopy(project)
+        self.log("project_created", actor, project=project.id, steps=len(project.steps))
+        if life.busy is None:
+            self.wake(actor)
+
+    def cancel_project(self, actor: str, project_id: str) -> bool:
+        project = self.lives[actor].projects.get(project_id)
+        if project is None or project.status != "active":
+            return False
+        project.status = "cancelled"
+        life = self.lives[actor]
+        if life.busy and life.busy.get("project") == project_id:
+            self.interrupt(actor, "project_cancelled")
+        self.log("project_cancelled", actor, project=project_id)
+        return True
+
+    def _complete_project_step(self, actor: str, project_id: str, kind: str, target: str) -> None:
+        project = self.lives[actor].projects[project_id]
+        step = project.current()
+        if step is None:
+            return
+        if project.deadline is not None and self.minute > project.deadline:
+            project.status = "failed"
+            self.log("project_failed", actor, project=project_id, reason="deadline")
+            return
+        if step.kind != kind or (step.target != target and not (
+                step.kind == "move" and self.lives[actor].location == step.target)):
+            return  # 前往远处设施的中间移动，不算完成该设施步骤。
+        project.evidence.append({"minute": self.minute, "kind": kind,
+                                 "target": target, "step": project.index})
+        project.index += 1
+        project.failures = 0
+        project.retry_at = 0
+        self.log("project_step_completed", actor, project=project_id,
+                 step=project.index, total=len(project.steps))
+        if project.index == len(project.steps):
+            project.status, project.completed_at = "completed", self.minute
+            self.log("project_completed", actor, project=project_id)
+            self.remember(actor, "project_completed", f"完成项目 {project_id}", 0.95)
+            self.appraise(actor, 0.15, 0.2)
+
+    def _project_failure(self, actor: str, project_id: str, reason: str) -> None:
+        project = self.lives[actor].projects.get(project_id)
+        if project is None or project.status != "active":
+            return
+        project.failures += 1
+        project.retry_at = self.minute + min(1440, 60 * 2 ** min(project.failures, 4))
+        self.log("project_step_failed", actor, project=project_id,
+                 step=project.index, reason=reason, attempts=project.failures)
+        if project.failures >= 6:
+            project.status = "failed"
+            self.log("project_failed", actor, project=project_id, reason="too_many_failures")
 
     def _resource_add(self, payload: dict[str, Any]) -> None:
         name = payload["resource"]

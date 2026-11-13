@@ -16,6 +16,23 @@ from urllib import request
 from .engine import WorldRuntime
 from .projection import actor_view
 from .memory import retrieve, summarize_known_facts
+from .model import Memory
+
+
+def bounded_view(world: WorldRuntime, actor: str) -> dict:
+    """只取与人物有关的有界上下文，控制 Token 花费/泄露范围。"""
+    view = actor_view(world, actor)
+    recent_props = sorted(view.get("propositions", {}).items(),
+                          key=lambda x: x[1].get("updated_at", 0), reverse=True)[:20]
+    view["propositions"] = dict(recent_props)
+    view["known_facilities"] = dict(list(view.get("known_facilities", {}).items())[:40])
+    view["relationships"] = dict(list(view.get("relationships", {}).items())[:25])
+    view["projects"] = dict(list(view.get("projects", {}).items())[:20])
+    # 作为成本护栏，避免单次模型请求装载无界人物内容。
+    if len(json.dumps(view, ensure_ascii=False)) > 15_000:
+        view["propositions"] = dict(recent_props[:5])
+        view["memories"] = view.get("memories", [])[-3:]
+    return view
 
 
 class Backend(Protocol):
@@ -49,8 +66,12 @@ class OpenAICompatibleBackend:
     """
     def __init__(self, model: str, base_url: str, api_key: str,
                  timeout: float = 20.0):
-        if not base_url.startswith(("https://", "http://")):
+        from urllib.parse import urlparse
+        parsed = urlparse(base_url)
+        if parsed.scheme not in {"https", "http"} or not parsed.hostname:
             raise ValueError("base_url 必须为 http(s) URL")
+        if parsed.scheme == "http" and parsed.hostname not in {"127.0.0.1", "localhost", "::1"}:
+            raise ValueError("外部模型 API 必须使用 HTTPS；HTTP 仅允许本机")
         self.url = base_url.rstrip("/") + "/chat/completions"
         self.model = model
         self.key = api_key
@@ -133,7 +154,7 @@ class CognitionService:
             answer, _ = validate_response(reply)
             world.log("character_spoke", actor, text=answer, mode="offline")
             return Reply(answer, False, "daily_budget", False)
-        view = actor_view(world, actor)
+        view = bounded_view(world, actor)
         view["relevant_memories"] = [
             {"minute": m.minute, "kind": m.kind, "text": m.text,
              "source": m.source} for m in retrieve(world.lives[actor], text, world.minute)]
@@ -163,3 +184,81 @@ class CognitionService:
         world.log("cognition_proposal", actor, intent=intent, accepted=accepted, reason=reason)
         world.log("character_spoke", actor, text=answer, mode="model")
         return Reply(answer, accepted, reason, True)
+
+
+def validate_reflection(raw: str) -> dict:
+    """反思只接受文本和可检查的项目提议；不会产生世界状态补丁。"""
+    if len(raw) > 20_000:
+        raise ValueError("反思内容过大")
+    obj = json.loads(raw)
+    if not isinstance(obj, dict) or set(obj) - {"reflection", "project"}:
+        raise ValueError("反思 JSON 字段非法")
+    thought = obj.get("reflection")
+    if not isinstance(thought, str) or not 1 <= len(thought.strip()) <= 1200:
+        raise ValueError("reflection 需要一段简短文本")
+    proposal = obj.get("project")
+    if proposal is not None:
+        if not isinstance(proposal, dict) or set(proposal) - {
+                "id", "steps", "priority", "start_minute", "deadline"}:
+            raise ValueError("项目建议字段非法")
+        if not isinstance(proposal.get("steps"), list) or len(proposal["steps"]) > 20:
+            raise ValueError("项目建议必须包含可执行步骤")
+    return obj
+
+
+def reflect(service: CognitionService, world: WorldRuntime, actor: str) -> dict:
+    """主动认知入口：每日最多一次，失败时不会产生可执行决定。
+
+    不在 WorldRuntime.run_until 内同步请求 HTTP。由服务层显式调度，
+    测试可用 ScriptedBackend 完全离线复现。
+    """
+    if actor not in world.lives:
+        raise ValueError("人物不存在")
+    if isinstance(service.backend, OfflineBackend):
+        return {"status": "offline", "project_accepted": False}
+    day = world.minute // 1440
+    flag = f"reflection:{actor}:{day}"
+    if world.cognition_usage.get(flag):
+        return {"status": "already_reflected", "project_accepted": False}
+    budget_key = f"{actor}:{day}"
+    used = world.cognition_usage.get(budget_key, 0)
+    if used >= service.max_calls_per_day:
+        return {"status": "daily_budget", "project_accepted": False}
+    world.cognition_usage[budget_key] = used + 1
+    world.cognition_usage[flag] = 1
+    view = bounded_view(world, actor)
+    # 把记忆限定为角色自己的经历，避免向模型暴露其他角色的私有状态。
+    view["relevant_memories"] = [m.text for m in retrieve(
+        world.lives[actor], "目标 计划 最近经历", world.minute, limit=10)]
+    messages = [
+        {"role": "system", "content":
+         "你是虚拟人物的受约束反思模块。请输出 JSON："
+         "{reflection:简短的一人称主观反思,project:null或{id,steps:[{kind,target}],priority}}。"
+         "只有列出的动作/设施可以用于项目：move,use,practice,assist,socialize。"
+         "禁止宣称已经完成未执行的行动；反思只是假说，不是世界事实。"},
+        {"role": "user", "content": json.dumps(view, ensure_ascii=False)},
+    ]
+    try:
+        result = validate_reflection(service.backend.generate(messages))
+    except (ValueError, KeyError, TypeError, OSError, TimeoutError) as exc:
+        world.log("reflection_failed", actor, reason=type(exc).__name__)
+        return {"status": "invalid_or_network_error", "project_accepted": False}
+    from .planning import project_from_dict
+    project_accepted = False
+    project_reason = None
+    if result.get("project") is not None:
+        try:
+            raw = dict(result["project"])
+            raw.setdefault("start_minute", world.minute)
+            project = project_from_dict(raw)
+            world.add_project(actor, project)
+            project_accepted = True
+        except (KeyError, ValueError, TypeError) as exc:
+            project_reason = str(exc)[:150]
+            world.log("reflection_project_denied", actor, reason=project_reason)
+    world.lives[actor].add_memory(Memory(
+        world.minute, "reflection", result["reflection"], salience=0.65,
+        source="llm_inference"))
+    world.log("reflection_recorded", actor, project_accepted=project_accepted)
+    return {"status": "reflected", "reflection": result["reflection"],
+            "project_accepted": project_accepted, "project_reason": project_reason}

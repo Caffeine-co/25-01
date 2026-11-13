@@ -7,10 +7,11 @@ from pathlib import Path
 from typing import Any
 from dataclasses import asdict
 
+from .planning import project_from_dict, validate_project
 from .model import (BodySpec, DriveSpec, Facility, FacilityBelief,
                     LifeState, LongGoal, Persona, Scenario, WorldDefinition)
 
-RULESET = "worldlife-next-1.0"  # 规则改变时拒绝用旧快照直接继续。
+RULESET = "worldlife-next-2.0"  # 规则改变时拒绝用旧快照直接继续。
 
 
 def _load(path: Path) -> dict[str, Any]:
@@ -73,9 +74,12 @@ def load_scenario(path: str | Path) -> Scenario:
         elif kind in ("facility_disable", "facility_enable"):
             if event["facility"] not in facilities:
                 raise ValueError(f"未知设施：{event}")
-        elif kind in ("vitality_change", "message"):
+        elif kind in ("vitality_change", "message", "knowledge_signal"):
             if not isinstance(event.get("actor"), str):
                 raise ValueError(f"事件缺少角色：{event}")
+            if kind == "knowledge_signal" and (not isinstance(event.get("key"), str)
+                                                    or "value" not in event):
+                raise ValueError("知识事件缺少 key/value")
         else:
             raise ValueError(f"未知事件类型：{kind}")
     world = WorldDefinition(raw_world["id"], connections, facilities, resources, events)
@@ -148,6 +152,7 @@ def load_scenario(path: str | Path) -> Scenario:
             vitality=float(actor.get("initial_vitality", body.initial_vitality)),
             beliefs=memories, commitments=[dict(x) for x in actor.get("commitments", [])],
             skills={k: float(v) for k, v in actor.get("skills", {}).items()},
+            projects={p["id"]: project_from_dict(p) for p in actor.get("projects", [])},
             long_goals={k: LongGoal(id=k, target=v, progress=float(actor.get("skills", {}).get(k, 0)),
                                     status="completed" if float(actor.get("skills", {}).get(k, 0)) >= v else "active")
                         for k, v in ambitions.items()})
@@ -159,6 +164,10 @@ def load_scenario(path: str | Path) -> Scenario:
         if event.get("actor") and event["actor"] not in lives:
             raise ValueError(f"事件角色不存在：{event['actor']}")
     for life in lives.values():
+        if len(life.projects) != len(next(x for x in binding["actors"] if x["id"] == life.id).get("projects", [])):
+            raise ValueError("重复项目 id")
+        for project in life.projects.values():
+            validate_project(project, life.id, set(lives), set(facilities), set(connections))
         for commitment in life.commitments:
             if int(commitment["minute"]) < 0:
                 raise ValueError("承诺时间不能为负数")

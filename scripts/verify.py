@@ -10,6 +10,8 @@ STEPS = [
     ('unit_tests', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v']),
     ('benchmarks', [sys.executable, 'scripts/benchmark.py']),
     ('stress', [sys.executable, 'scripts/stress.py']),
+    ('production_benchmark', [sys.executable, 'scripts/production_benchmark.py']),
+    ('server_smoke', [sys.executable, 'scripts/smoke_server.py']),
     ('compile', [sys.executable, '-m', 'compileall', '-q', 'simlife', 'tests', 'scripts']),
 ]
 
@@ -18,7 +20,7 @@ def main():
     for key, command in STEPS:
         process = subprocess.run(command, cwd=ROOT, text=True,
                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                                 timeout=120, check=False)
+                                 timeout=180, check=False)
         results[key] = {'exit_code': process.returncode, 'command': ' '.join(command),
                         'tail': '\n'.join(process.stdout.splitlines()[-8:])}
         print(f'{key}: {"PASS" if process.returncode == 0 else "FAIL"}')

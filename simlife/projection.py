@@ -29,4 +29,10 @@ def actor_view(world: WorldRuntime, actor: str) -> dict:
                           for k, v in life.relationships.items()},
         "memories": [{"minute": m.minute, "kind": m.kind, "text": m.text}
                      for m in life.memories[-8:]],
+        "projects": {k: {"status": v.status, "step": v.index,
+                          "total": len(v.steps), "retry_at": v.retry_at}
+                     for k, v in life.projects.items()},
+        "propositions": {k: {"value": v.value, "confidence": v.confidence,
+                              "source": v.source, "updated_at": v.updated_at}
+                         for k, v in life.propositions.items()},
     }

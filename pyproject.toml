@@ -4,13 +4,17 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "worldlife-next"
-version = "1.0.0"
+version = "2.0.0"
 description = "Auditable event-driven virtual characters, built on the world-preview WorldLife design"
 requires-python = ">=3.11"
 dependencies = []
 
 [project.scripts]
 worldlife = "simlife.cli:main"
+worldlife-server = "simlife.server:main"
+worldlife-chat = "simlife.chat:main"
+worldlife-client = "simlife.client:main"
+worldlife-admin = "simlife.admin:main"
 
 [tool.setuptools.packages.find]
 include = ["simlife*"]
